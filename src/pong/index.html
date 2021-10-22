@@ -1,3 +1,53 @@
+<!DOCTYPE html>
 <html>
-Pong.
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="../game_utils.js"></script>
+<style>
+/* Safari syntax */
+:-webkit-full-screen {
+  background-color: yellow;
+}
+
+/* IE11 */
+:-ms-fullscreen {
+  background-color: yellow;
+}
+
+/* Standard syntax */
+:fullscreen {
+  background-color: yellow;
+}
+
+/* Style the button */
+button {
+  padding: 20px;
+  font-size: 20px;
+}
+</style>
+</head>
+<body>
+
+
+<button onclick="tryFullscreen(document.getElementById('game'));">Open Fullscreen</button>
+<button onclick="closeFullscreen();">Close Fullscreen</button>
+
+<div id="game">
+</div>
+
+<script>
+$(document).ready(function() {
+	div = document.getElementById("game");
+	game = initGame(div, 200, 100);
+	game.draw = function(ctx) {
+		// Draw a line on the buffer
+		ctx.moveTo(0, 0);
+		ctx.lineTo(200, 100);
+		ctx.stroke();
+	};
+});
+</script>
+
+</body>
 </html>
