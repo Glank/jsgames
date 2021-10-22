@@ -25,6 +25,20 @@ button {
   padding: 20px;
   font-size: 20px;
 }
+
+div {
+  height: 200px;
+  position: relative;
+}
+
+canvas {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
 </style>
 </head>
 <body>
@@ -38,14 +52,56 @@ button {
 
 <script>
 $(document).ready(function() {
-	div = document.getElementById("game");
-	game = initGame(div, 200, 100);
+	var div = document.getElementById("game");
+	var game = initGame(div, 200, 100);
+  var ball_x = Math.random()*game.display.width;
+  var ball_y = Math.random()*game.display.height;
+  var ball_speed = 50; // pxls per second
+  var angle = Math.random()*2*Math.PI;
+  var ball_dx = ball_speed*Math.cos(angle);
+  var ball_dy = ball_speed*Math.sin(angle);
+  console.log('x: '+ball_x+'  y: '+ball_y);
 	game.draw = function(ctx) {
 		// Draw a line on the buffer
-		ctx.moveTo(0, 0);
-		ctx.lineTo(200, 100);
-		ctx.stroke();
+    ctx.beginPath();
+		ctx.arc(ball_x, ball_y, 5, 0, 2*Math.PI);
+    ctx.closePath();
+    ctx.fillStyle = "blue";
+		ctx.fill();
 	};
+  function after_bounce() {
+    var angle = Math.atan2(ball_dy, ball_dx);
+    angle += (Math.random()-0.5)/2;
+    if(ball_speed < 100) {
+      ball_speed += 1;
+    }
+    ball_dx = ball_speed*Math.cos(angle);
+    ball_dy = ball_speed*Math.sin(angle);
+  }
+  game.update = function(dt) {
+    ball_x += ball_dx*dt;
+    ball_y += ball_dy*dt;
+    if (ball_x < 0) {
+      ball_dx *= -1;
+      ball_x = 0;
+      after_bounce();
+    }
+    if (ball_y < 0) {
+      ball_dy *= -1;
+      ball_y = 0;
+      after_bounce();
+    }
+    if (ball_x > game.display.width) {
+      ball_dx *= -1;
+      ball_x = game.display.width;
+      after_bounce();
+    }
+    if (ball_y > game.display.height) {
+      ball_dy *= -1;
+      ball_y = game.display.height;
+      after_bounce();
+    }
+  };
 });
 </script>
 
