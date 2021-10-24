@@ -33,11 +33,6 @@ function tryFullscreen(element) {
 }
 
 function initGame(div, width, height){
-	/*
-	div.style.display = "flex";
-	div.style["flex-direction"] = "row";
-	div.style["justify-content"] = "center";
-	*/
 	div.style.border = "2px solid red";
 	div.style["background-color"] = "black";
   var display = document.createElement("canvas");
@@ -65,12 +60,11 @@ function initGame(div, width, height){
 				ctx.rotate(Math.PI/2);
 			}
       game.draw(ctx);
-			ctx.restore();
-
 			if(game.debug) {
-				ctx.fillStyle = "#000000";
+				ctx.fillStyle = "#0000FF";
 				ctx.fillText(game.debug, 2, 10);
 			}
+			ctx.restore();
     }
   };
   game._loop = function() {
@@ -95,7 +89,6 @@ function initGame(div, width, height){
 				rotated_fit = real_height/(0.0+container.height);
 			}
 			should_rotate = rotated_fit > nonrotated_fit;
-			game.debug = ''+rotated_fit+' > '+nonrotated_fit;
 		}
 		if(should_rotate !== game.rotated) {
 			game.rotated = should_rotate;
