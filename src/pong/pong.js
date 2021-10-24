@@ -1,7 +1,7 @@
-function initBall(game_display) {
+function initBall(game) {
 	var ball = {
-		'x': game_display.width/2.0,
-		'y': game_display.height/2.0,
+		'x': game.width/2.0,
+		'y': game.height/2.0,
 		'speed': 50 // pixels per second
 	};
 	if(Math.random() < 0.5) {
@@ -12,7 +12,7 @@ function initBall(game_display) {
 	return ball;
 }
 
-function updateBall(ball, dt, game_display) {
+function updateBall(ball, dt, game) {
 	var dx = ball.speed*Math.cos(ball.angle);
 	var dy = ball.speed*Math.sin(ball.angle);
 	ball.x += dx*dt;
@@ -25,8 +25,8 @@ function updateBall(ball, dt, game_display) {
 		dx *= -1;
 		bounced = true;
 	}
-	if(ball.x > game_display.width) {
-		ball.x = game_display.width;
+	if(ball.x > game.width) {
+		ball.x = game.width;
 		dx *= -1;
 		bounced = true;
 	}
@@ -35,8 +35,8 @@ function updateBall(ball, dt, game_display) {
 		dy *= -1;
 		bounced = true;
 	}
-	if(ball.y > game_display.height) {
-		ball.y = game_display.height;
+	if(ball.y > game.height) {
+		ball.y = game.height;
 		dy *= -1;
 		bounced = true;
 	}

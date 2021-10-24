@@ -1,3 +1,5 @@
+// requires src/mobile_check.js
+
 function closeFullscreen() {
   // https://www.w3schools.com/howto/howto_js_fullscreen.asp
   if (document.exitFullscreen) {
@@ -43,24 +45,64 @@ function initGame(div, width, height){
   display.height = height;
   div.appendChild(display);
   var game = {
+		"width": width,
+		"height": height,
     "display": display,
-    "draw": null,
-		"update": null,
 		"container_overflow": null,
+		"on_mobile": isMobileBrowser(),
+		"rotated": false,
 		"_frame_interval": 50,
+		"debug": null
   };
   game.redraw = function() {
 		var ctx = display.getContext("2d");
 		ctx.fillStyle = "#FFFFFF";
 		ctx.fillRect(0, 0, display.width, display.height);
-    if(game.draw !== null) {
+    if(game.draw) {
 			ctx.save()
+			if(game.rotated) {
+				ctx.translate(display.width, 0);
+				ctx.rotate(Math.PI/2);
+			}
       game.draw(ctx);
 			ctx.restore();
+
+			if(game.debug) {
+				ctx.fillStyle = "#000000";
+				ctx.fillText(game.debug, 2, 10);
+			}
     }
   };
   game._loop = function() {
 		container = div.getBoundingClientRect();
+		var should_rotate = false;
+		if(game.on_mobile && isFullscreen()) {
+			var nonrotated_fit = 0; // % of screen used if not rotated
+			if(container.width/game.width > container.height/game.height) {
+				var real_width = game.width*container.height/game.height;
+				nonrotated_fit = real_width/(0.0+container.width);
+			} else {
+				var real_height = game.height*container.width/game.width;
+				nonrotated_fit = real_height/(0.0+container.height);
+			}
+
+			var rotated_fit = 0; // % of screen used if rotated
+			if(container.width/game.height > container.height/game.width) {
+				var real_width = game.height*container.height/game.width;
+				rotated_fit = real_width/(0.0+container.width);
+			} else {
+				var real_height = game.width*container.width/game.height;
+				rotated_fit = real_height/(0.0+container.height);
+			}
+			should_rotate = rotated_fit > nonrotated_fit;
+			game.debug = ''+rotated_fit+' > '+nonrotated_fit;
+		}
+		if(should_rotate !== game.rotated) {
+			game.rotated = should_rotate;
+			var tmp = display.width;
+			display.width = display.height;
+			display.height = tmp;
+		}
 		if(container.width/display.width > container.height/display.height) {
 			if(game.container_overflow !== "horizontal") {	
 				display.style["width"] = "";
@@ -74,8 +116,8 @@ function initGame(div, width, height){
 				game.container_overflow = "vertical";
 			}
 		}
-		if(game.update !== null) {
-			// TODO: measure actaul time elapsed
+		if(game.update) {
+			// TODO: measure actual time elapsed
 			game.update(game._frame_interval/1000.0);
 		}
 		window.requestAnimationFrame(game.redraw);

@@ -3,13 +3,14 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="../mobile_check.js"></script>
 <script src="../game_utils.js"></script>
 <script src="pong.js"></script>
 <script>
 $(document).ready(function() {
 	var div = document.getElementById("game");
 	var game = initGame(div, 200, 100);
-  var ball = initBall(game.display);
+  var ball = initBall(game);
 	game.draw = function(ctx) {
 		// Draw a line on the buffer
     ctx.beginPath();
@@ -19,7 +20,7 @@ $(document).ready(function() {
 		ctx.fill();
 	};
   game.update = function(dt) {
-    updateBall(ball, dt, game.display);
+    updateBall(ball, dt, game);
   };
 });
 </script>
