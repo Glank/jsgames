@@ -1,6 +1,6 @@
-// requires src/mobile_check.js
+import {isMobileBrowser} from "./mobile_check.js";
 
-function closeFullscreen() {
+export function closeFullscreen() {
   // https://www.w3schools.com/howto/howto_js_fullscreen.asp
   if (document.exitFullscreen) {
     document.exitFullscreen();
@@ -11,7 +11,7 @@ function closeFullscreen() {
   }
 }
 
-function isFullscreen() {
+export function isFullscreen() {
   // https://stackoverflow.com/questions/7130397/how-do-i-make-a-div-full-screen
   return document.fullscreenElement ||
     document.webkitFullscreenElement ||
@@ -19,7 +19,7 @@ function isFullscreen() {
     document.msFullscreenElement;
 }
   
-function tryFullscreen(element) {
+export function tryFullscreen(element) {
   // https://stackoverflow.com/questions/7130397/how-do-i-make-a-div-full-screen
   if (element.requestFullscreen) {
     element.requestFullscreen();
@@ -32,7 +32,7 @@ function tryFullscreen(element) {
   }
 }
 
-function initGame(div, width, height){
+export function initGame(div, width, height){
 	div.style.border = "2px solid red";
 	div.style["background-color"] = "black";
   var display = document.createElement("canvas");
@@ -53,6 +53,8 @@ function initGame(div, width, height){
   game.redraw = function() {
 		var ctx = display.getContext("2d");
 		ctx.clearRect(0, 0, display.width, display.height);
+    //ctx.fillStyle = "#FFFFFF";
+    //ctx.fillRect(0,0,display.width, display.height);
     if(game.draw) {
 			ctx.save()
 			if(game.rotated) {
@@ -68,7 +70,7 @@ function initGame(div, width, height){
     }
   };
   game._loop = function() {
-		container = div.getBoundingClientRect();
+		var container = div.getBoundingClientRect();
 		var should_rotate = false;
 		if(game.on_mobile && isFullscreen()) {
 			var nonrotated_fit = 0; // % of screen used if not rotated

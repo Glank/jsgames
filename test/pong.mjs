@@ -1,8 +1,8 @@
-#include src/test_utils.js
-#include src/pong/pong.js
+import {assert} from "../src/test_utils.mjs";
+import {initBall, updateBall} from "../src/pong/pong.mjs";
 
 function testBall() {
-  display = {
+  var display = {
     'width': 200,
     'height': 100
   }

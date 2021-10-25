@@ -67,25 +67,8 @@ def validate_args():
     args.remove('-q') 
   assert len(args) == 0
 
-def preprocess(input_file, output_file):
-  includes_pattern = re.compile(r'\s*#include\s+(.*)')
-  for line in input_file:
-    inc = includes_pattern.match(line)
-    if inc:
-      with open(inc.group(1)) as f:
-        output_file.write(f.read())
-      output_file.write('\n')
-    else:
-      output_file.write(line)
-      output_file.write('\n')
-
 def run_test(test_dir, test_fn):
-  bin_dir = os.path.join('bin/', test_dir)
-  os.makedirs(bin_dir, exist_ok=True)
-  with open(os.path.join(test_dir, test_fn)) as in_f:
-    with open(os.path.join(bin_dir, test_fn), 'w') as out_f:
-      preprocess(in_f, out_f)
-  cmd('nodejs {}'.format(os.path.join(bin_dir, test_fn)))
+  cmd('nodejs {}'.format(os.path.join(test_dir, test_fn)))
 
 def run_tests():
   global VERBOSE, DRY_RUN
@@ -93,7 +76,7 @@ def run_tests():
     print('Running tests...')
   for dirpath, dirnames, filenames in os.walk('test'):
     for fn in filenames:
-      if re.match(r'\w.*\.js', fn):
+      if re.match(r'\w.*\.mjs', fn):
         run_test(dirpath, fn)
   if VERBOSE:
     if DRY_RUN:

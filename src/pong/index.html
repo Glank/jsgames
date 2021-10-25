@@ -2,30 +2,6 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script src="../mobile_check.js"></script>
-<script src="../game_utils.js"></script>
-<script src="pong.js"></script>
-<script>
-$(document).ready(function() {
-	var div = document.getElementById("game");
-	var game = initGame(div, 480, 480*2);
-  var ball = initBall(game);
-	game.draw = function(ctx) {
-		// Draw a line on the buffer
-    ctx.beginPath();
-		ctx.arc(ball.x, ball.y, 25, 0, 2*Math.PI);
-    ctx.closePath();
-    ctx.fillStyle = "blue";
-		ctx.fill();
-	};
-  game.update = function(dt) {
-    updateBall(ball, dt, game);
-  };
-  game.set_frame_interval(10);
-});
-</script>
-
 <style>
 /* Safari syntax */
 :-webkit-full-screen {
@@ -66,11 +42,36 @@ canvas {
 <body>
 
 
-<button onclick="tryFullscreen(document.getElementById('game'));">Open Fullscreen</button>
-<button onclick="closeFullscreen();">Close Fullscreen</button>
+<button id="open_fullscreen">Open Fullscreen</button>
 
 <div id="game">
 </div>
 
+<script type="module">
+import {initGame, tryFullscreen} from "../game_utils.mjs";
+import {initBall, updateBall} from "./pong.mjs";
+(function() {
+	var div = document.getElementById("game");
+	var game = initGame(div, 480, 480*2);
+  var ball = initBall(game);
+	game.draw = function(ctx) {
+		// Draw a line on the buffer
+    ctx.beginPath();
+		ctx.arc(ball.x, ball.y, 25, 0, 2*Math.PI);
+    ctx.closePath();
+    ctx.fillStyle = "blue";
+		ctx.fill();
+	};
+  game.update = function(dt) {
+    updateBall(ball, dt, game);
+  };
+  game.set_frame_interval(10);
+
+  var fs_button = document.getElementById("open_fullscreen");
+  fs_button.onclick = function() {
+    tryFullscreen(div);
+  };
+})();
+</script>
 </body>
 </html>

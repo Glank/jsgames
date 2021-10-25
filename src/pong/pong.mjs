@@ -1,4 +1,4 @@
-function initBall(game) {
+export function initBall(game) {
 	var ball = {
 		'x': game.width/2.0,
 		'y': game.height/2.0,
@@ -9,7 +9,7 @@ function initBall(game) {
 	return ball;
 }
 
-function updateBall(ball, dt, game) {
+export function updateBall(ball, dt, game) {
 	var dx = ball.speed*Math.cos(ball.angle);
 	var dy = ball.speed*Math.sin(ball.angle);
 	ball.x += dx*dt;
