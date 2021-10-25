@@ -38,6 +38,7 @@ function initGame(div, width, height){
   var display = document.createElement("canvas");
   display.width = width;
   display.height = height;
+	display.style["background-color"] = "white";
   div.appendChild(display);
   var game = {
 		"width": width,
@@ -51,8 +52,7 @@ function initGame(div, width, height){
   };
   game.redraw = function() {
 		var ctx = display.getContext("2d");
-		ctx.fillStyle = "#FFFFFF";
-		ctx.fillRect(0, 0, display.width, display.height);
+		ctx.clearRect(0, 0, display.width, display.height);
     if(game.draw) {
 			ctx.save()
 			if(game.rotated) {
@@ -109,12 +109,28 @@ function initGame(div, width, height){
 				game.container_overflow = "vertical";
 			}
 		}
-		if(game.update) {
-			// TODO: measure actual time elapsed
-			game.update(game._frame_interval/1000.0);
+		if (game.update) {
+			if (performance.now) {
+				if (game._last_updated) {
+					var now = performance.now();
+					var delta = (now-game._last_updated)/1000.0;
+					game.update(delta);
+					game._last_updated = now;
+				} else {
+					game._last_updated = performance.now();
+					game.update(game._frame_interval/1000.0);
+				}
+			} else {
+				game.update(game._frame_interval/1000.0);
+			}
 		}
 		window.requestAnimationFrame(game.redraw);
-  }
+  };
   game._interval = window.setInterval(game._loop, game._frame_interval);
+	game.set_frame_interval = function(interval) {
+		game._frame_interval = interval;
+		window.clearInterval(game._interval);
+		game._interval = window.setInterval(game._loop, game._frame_interval);
+	};
   return game;
 }

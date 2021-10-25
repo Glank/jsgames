@@ -9,12 +9,12 @@
 <script>
 $(document).ready(function() {
 	var div = document.getElementById("game");
-	var game = initGame(div, 200, 100);
+	var game = initGame(div, 480, 480*2);
   var ball = initBall(game);
 	game.draw = function(ctx) {
 		// Draw a line on the buffer
     ctx.beginPath();
-		ctx.arc(ball.x, ball.y, 5, 0, 2*Math.PI);
+		ctx.arc(ball.x, ball.y, 25, 0, 2*Math.PI);
     ctx.closePath();
     ctx.fillStyle = "blue";
 		ctx.fill();
@@ -22,6 +22,7 @@ $(document).ready(function() {
   game.update = function(dt) {
     updateBall(ball, dt, game);
   };
+  game.set_frame_interval(10);
 });
 </script>
 
