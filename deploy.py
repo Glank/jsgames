@@ -43,48 +43,53 @@ def get_config():
       json.dump(config, f, indent='  ', sort_keys=True)
   return config
 
-DRY_RUN = False
-VERBOSE = True
+FLAG_ARGS = [
+  ('dry_run', '--dry'),
+  ('quiet', '-q'),
+  ('test_only', '--test'),
+]
+FLAGS = dict((fa[0], False) for fa in FLAG_ARGS)
 
 def cmd(cmd):
-  global DRY_RUN, VERBOSE
-  if VERBOSE:
+  global FLAGS
+  if not FLAGS['quiet']:
     print(cmd)
-  if not DRY_RUN:
+  if not FLAGS['dry_run']:
     code = os.system(cmd)
     if code:
       print('Error executing: {}'.format(cmd))
       exit(1)
 
 def validate_args():
-  global DRY_RUN, VERBOSE
+  global FLAGS
   args = sys.argv[1:]
-  if '--dry' in args:
-    DRY_RUN = True
-    args.remove('--dry') 
-  if '-q' in args:
-    VERBOSE = False
-    args.remove('-q') 
+  for fa in FLAG_ARGS:
+    key, arg = fa[0], fa[1]
+    if arg in args:
+      FLAGS[key] = True
+      args.remove(arg) 
   assert len(args) == 0
 
 def run_test(test_dir, test_fn):
   cmd('nodejs {}'.format(os.path.join(test_dir, test_fn)))
 
 def run_tests():
-  global VERBOSE, DRY_RUN
-  if VERBOSE:
+  global FLAGS 
+  if not FLAGS['quiet']:
     print('Running tests...')
   for dirpath, dirnames, filenames in os.walk('test'):
     for fn in filenames:
       if re.match(r'\w.*\.mjs', fn):
         run_test(dirpath, fn)
-  if VERBOSE:
-    if DRY_RUN:
+  if not FLAGS['quiet']:
+    if FLAGS['dry_run']:
       print('Dry run of tests shown above. None were executed but all were successfully preprocessed.')
     else: 
       print('All tests passed.')
 
 def main():
+  global FLAGS 
+
   config = get_config()
   validate_args()
 
@@ -92,7 +97,8 @@ def main():
   run_tests()
   
   # deploy
-  cmd('cp -r src/* {}'.format(config['out_dir']))
+  if not FLAGS['test_only']:
+    cmd('cp -r src/* {}'.format(config['out_dir']))
   
 
 if __name__ == '__main__':
