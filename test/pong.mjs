@@ -1,5 +1,6 @@
 import {assert} from "../src/test_utils.mjs";
-import {initBall, updateBall} from "../src/pong/pong.mjs";
+import {initBall, updateBall, orth_dist2} from "../src/pong/pong.mjs";
+import * as mtx from "../src/mtx.mjs";
 
 function testBall() {
   var display = {
@@ -16,5 +17,21 @@ function testBall() {
   assert(ball.x === expected_x, 'ball.x should be '+expected_x+' not '+ball.x);
 }
 
-testBall();
+function testOrthDist2() {
+  var p = mtx.create_v2(1, 1); 
+  var a = mtx.create_v2(0, 0);
+  var b = mtx.create_v2(2, 0);
+  var d = orth_dist2(p, a, b);
+  assert(d === 1, 'dist should be 1');
 
+  p = mtx.create_v2(2, 2);
+  d = orth_dist2(p, a, b);
+  assert(d === 4, 'dist should be 4');
+
+  b = mtx.create_v2(1, 1);
+  d = orth_dist2(p, a, b);
+  assert(d === 0, 'dist should be 0');
+}
+
+testBall();
+testOrthDist2();

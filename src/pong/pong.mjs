@@ -1,3 +1,5 @@
+import * as mtx from "../mtx.mjs";
+
 export function initBall(game) {
 	var ball = {
 		'x': game.width/2.0,
@@ -48,4 +50,20 @@ export function updateBall(ball, dt, game) {
 			ball.speed *= 1.05;
 		// ball.angle += (Math.random()-0.5)/2;
 	}
+}
+
+// Calculates the squared orthoganal distance from a point to a line segment defined by two points.
+export function orth_dist2(point, line_a, line_b) {
+	// translate system to line_b
+	const p = mtx.uninit_v2();
+	mtx.sub_v2(point, line_b, p);
+	const v = mtx.uninit_v2();
+	mtx.sub_v2(line_a, line_b, v);
+	// the projection of p onto v
+	const s = mtx.dot_v2(p, v)/(mtx.dot_v2(v,v));
+	const proj = mtx.uninit_v2();
+	mtx.mult_s_v2(s, v, proj);
+	const d = v; // v is no longer needed so re-using it's memory to calculate the distance
+	mtx.sub_v2(proj, p, d);
+	return mtx.dot_v2(d,d);
 }
