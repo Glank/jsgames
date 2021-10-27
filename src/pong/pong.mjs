@@ -78,6 +78,8 @@ export function updatePong(dt, game) {
 	var collision = moving_segment_and_point_collision(
 		p_start, p_end, ball_start, ball_end);
 	if (collision) {
+		ball.x = collision.p[0];
+		ball.y = collision.p[1];
 		var r = reflect(ball_start, ball_end, collision.a, collision.b, collision.p);
 		ball_dx = r[0];
 		ball_dy = r[1];
@@ -115,8 +117,8 @@ export function updatePong(dt, game) {
 	
 	ball.angle = Math.atan2(ball_dy, ball_dx);
 	if(bounced) {
-		if (ball.speed < ball.max_speed)
-			ball.speed *= 1.05;
+		// if (ball.speed < ball.max_speed)
+		//   ball.speed *= 1.05;
 		// ball.angle += (Math.random()-0.5)/2;
 	}
 }

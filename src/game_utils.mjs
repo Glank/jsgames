@@ -64,7 +64,10 @@ export function initGame(div, width, height){
       game.draw(ctx);
 			if(game.debug) {
 				ctx.fillStyle = "#0000FF";
-				ctx.fillText(game.debug, 2, 10);
+        var lines = game.debug.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          ctx.fillText(lines[i], 2, 10+i*12);
+        }
 			}
 			ctx.restore();
     }
