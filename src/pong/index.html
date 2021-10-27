@@ -49,21 +49,32 @@ canvas {
 
 <script type="module">
 import {initGame, tryFullscreen} from "../game_utils.mjs";
-import {initBall, updateBall} from "./pong.mjs";
+import {initPong, updatePong} from "./pong.mjs";
 (function() {
 	var div = document.getElementById("game");
 	var game = initGame(div, 480, 480*2);
-  var ball = initBall(game);
+  var pong = initPong(game);
+  var ball = pong.ball;
+  var paddle = pong.paddle;
 	game.draw = function(ctx) {
-		// Draw a line on the buffer
     ctx.beginPath();
 		ctx.arc(ball.x, ball.y, 25, 0, 2*Math.PI);
     ctx.closePath();
     ctx.fillStyle = "blue";
 		ctx.fill();
+
+    var p_pts = paddle.points();
+    //console.log(p_ends);
+    ctx.lineWidth = 10;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(p_pts[0], p_pts[1]);
+    ctx.lineTo(p_pts[2], p_pts[3]);
+    ctx.strokeStyle = "black";
+		ctx.stroke();
 	};
   game.update = function(dt) {
-    updateBall(ball, dt, game);
+    updatePong(dt, game);
   };
   game.set_frame_interval(10);
 
@@ -71,6 +82,29 @@ import {initBall, updateBall} from "./pong.mjs";
   fs_button.onclick = function() {
     tryFullscreen(div);
   };
+
+  document.addEventListener('keydown', function(e) {
+    if(e.code === 'ArrowLeft') {
+      paddle.x_dir = -1;
+    } else if(e.code === 'ArrowRight') {
+      paddle.x_dir = 1;
+    } else if(e.code === 'ArrowDown') {
+      paddle.angle_dir = -1;
+    } else if(e.code === 'ArrowUp') {
+      paddle.angle_dir = 1;
+    }
+  });
+  document.addEventListener('keyup', function(e) {
+    if(e.code === 'ArrowLeft' && paddle.x_dir === -1) {
+      paddle.x_dir = 0;
+    } else if(e.code === 'ArrowRight' && paddle.x_dir === 1) {
+      paddle.x_dir = 0;
+    } else if(e.code === 'ArrowDown' && paddle.angle_dir === -1) {
+      paddle.angle_dir = 0;
+    } else if(e.code === 'ArrowUp' && paddle.angle_dir === 1) {
+      paddle.angle_dir = 0;
+    }
+  });
 })();
 </script>
 </body>
