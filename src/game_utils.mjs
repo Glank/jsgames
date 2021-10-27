@@ -134,5 +134,36 @@ export function initGame(div, width, height){
 		window.clearInterval(game._interval);
 		game._interval = window.setInterval(game._loop, game._frame_interval);
 	};
+	game.touchesDown = [];
+	game.addTouchListener = function(callback) {
+		var handler = function(e, catagory) {
+			var rect = display.getBoundingClientRect();
+			var touchesDown = [];
+			for (var i = 0; i < e.touches.length; i++) {
+				// TODO: handle rotated screens
+				var x = (e.touches[i].clientX - rect.left)/rect.width*display.width;
+				var y = (e.touches[i].clientY - rect.top)/rect.height*display.height;
+				touchesDown[i] = {'x':x, 'y':y};
+			}
+			game.touchesDown = touchesDown;
+			var evnt = {
+				game: game,
+				catagory: catagory
+			}
+			callback(evnt);
+		};
+		display.addEventListener('touchstart', function(e){
+			handler(e, 'start');
+		});
+		display.addEventListener('touchmove', function(e){
+			handler(e, 'move');
+		});
+		display.addEventListener('touchend', function(e){
+			handler(e, 'end');
+		});
+		display.addEventListener('touchcancel', function(e){
+			handler(e, 'cancel');
+		});
+	};
   return game;
 }
