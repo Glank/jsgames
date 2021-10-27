@@ -6,7 +6,6 @@ function initBall(game) {
 		'y': game.height/2.0,
 		'speed': game.height/4.0, // pixels per second
     'max_speed': game.height*2,
-		'transparent_to_paddle': false
 	};
   ball.angle = (3*Math.PI/2)+((Math.random()-0.5)/2.5)*Math.PI;
 	return ball;
@@ -69,39 +68,52 @@ export function updatePong(dt, game) {
 		p_end = paddle.points();
 	}
 
-	var dx = ball.speed*Math.cos(ball.angle);
-	var dy = ball.speed*Math.sin(ball.angle);
-	ball.x += dx*dt;
-	ball.y += dy*dt;
+	var ball_dx = ball.speed*Math.cos(ball.angle)*dt;
+	var ball_dy = ball.speed*Math.sin(ball.angle)*dt;
+	var bounced = false;
+
+	// detect collision with the paddle
+	var ball_start = mtx.create_v2(ball.x, ball.y);
+	var ball_end = mtx.create_v2(ball.x+ball_dx, ball.y+ball_dy);
+	var collision = moving_segment_and_point_collision(
+		p_start, p_end, ball_start, ball_end);
+	if (collision) {
+		var r = reflect(ball_start, ball_end, collision.a, collision.b, collision.p);
+		ball_dx = r[0];
+		ball_dy = r[1];
+		bounced = true;
+	}
+
+	ball.x += ball_dx;
+	ball.y += ball_dy;
 
 	// handle bouncing off walls
-	var bounced = false;
 	if(ball.x < 0) {
     var over = -ball.x;
 		ball.x = over;
-		dx *= -1;
+		ball_dx *= -1;
 		bounced = true;
 	}
 	if(ball.x > game.width) {
     var over = ball.x-game.width;
 		ball.x = game.width-over;
-		dx *= -1;
+		ball_dx *= -1;
 		bounced = true;
 	}
 	if(ball.y < 0) {
     var over = -ball.y;
 		ball.y = over;
-		dy *= -1;
+		ball_dy *= -1;
 		bounced = true;
 	}
 	if(ball.y > game.height) {
     var over = ball.y-game.height;
 		ball.y = game.height-over;
-		dy *= -1;
+		ball_dy *= -1;
 		bounced = true;
 	}
 	
-	ball.angle = Math.atan2(dy, dx);
+	ball.angle = Math.atan2(ball_dy, ball_dx);
 	if(bounced) {
 		if (ball.speed < ball.max_speed)
 			ball.speed *= 1.05;
@@ -209,9 +221,34 @@ function moving_segment_and_point_collision(seg_start, seg_end, point_start, poi
 	return c;
 }
 
+// Reflects a ray from ra to rb off of a wall from wa to wb,
+// that collides at point c.
+// returns a vector of the length the ray still has to travel after
+// the collision in the reflected direction.
+function reflect(ra, rb, wa, wb, c) {
+	const w = mtx.uninit_v2();
+	mtx.sub_v2(wb, wa, w);
+	// the leftover of the ray beyond the wall
+	const l = mtx.uninit_v2(); 
+	mtx.sub_v2(rb, c, l);
+	// let r be l reflected over w (i.e. the remaining travel of the ray)
+	// proj_w(r) == proj_w(t) == w*(dot(l,w)/dot(w,w))
+	// let n be the normal of the wal
+	// proj_n(l) = l-proj_w(l)
+	// proj_n(w) = -proj_n(l)
+	// r = proj_w(r) + proj_n(r) = proj_w(l) + (- (l-proj_w(l)) )
+	// r = 2*(dot(l,w)/dot(w,w))*w - l
+	const s = 2*mtx.dot_v2(l, w)/mtx.dot_v2(w, w);
+	const r = mtx.uninit_v2();
+	mtx.mult_s_v2(s, w, r);
+	mtx.sub_v2(r, l, r);
+	return r;
+}
+
 // exports for testing purposes only
 export var _test = {
 	'sgnd_orth_dist': sgnd_orth_dist,
 	'moving_line_and_point_collision': moving_line_and_point_collision,
-	'moving_segment_and_point_collision': moving_segment_and_point_collision
+	'moving_segment_and_point_collision': moving_segment_and_point_collision,
+	'reflect': reflect
 };

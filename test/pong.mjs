@@ -5,16 +5,16 @@ import * as mtx from "../src/mtx.mjs";
 function testBall() {
   var game = {
     'width': 200,
-    'height': 100
+    'height': 500
   }
   var pong = initPong(game);
   var ball = pong.ball;
   assert(ball.x === 100, 'ball.x should be 100');
-  assert(ball.y === 50, 'ball.y should be 50');
+  assert(ball.y === 250, 'ball.y should be 250');
 
   ball.angle = 0;
-  updatePong(1.0, game);
-  var expected_x = 100+ball.speed;
+  updatePong(1/8.0, game);
+  var expected_x = 100+ball.speed/8;
   assert(ball.x === expected_x, 'ball.x should be '+expected_x+' not '+ball.x);
 }
 
@@ -150,6 +150,28 @@ function testCollisions() {
 	testCollision7();
 }
 
+function testReflect1() {
+  var ra = mtx.create_v2(0,1);
+  var rb = mtx.create_v2(0,-1);
+  var wa = mtx.create_v2(-1,0);
+  var wb = mtx.create_v2(1,0);
+  var c = mtx.create_v2(0,0);
+  var r = _test.reflect(ra, rb, wa, wb, c);
+  assert(approx_v2(r, 0, 1), 'reflection should be <0,1> not '+r);
+}
+
+function testReflect2() {
+  var ra = mtx.create_v2(0,1);
+  var rb = mtx.create_v2(0,-1);
+  var wa = mtx.create_v2(-1,-1);
+  var wb = mtx.create_v2(1,1);
+  var c = mtx.create_v2(0,0);
+  var r = _test.reflect(ra, rb, wa, wb, c);
+  assert(approx_v2(r, -1, 0), 'reflection should be <-1,0> not '+r);
+}
+
 testBall();
 testOrthDist();
 testCollisions();
+testReflect1();
+testReflect2();
