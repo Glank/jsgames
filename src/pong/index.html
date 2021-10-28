@@ -48,8 +48,9 @@ canvas {
 </div>
 
 <script type="module">
-import {initGame, tryFullscreen} from "../game_utils.mjs";
+import {initGame, tryFullscreen, isFullscreen} from "../game_utils.mjs";
 import {initPong, updatePong} from "./pong.mjs";
+import {isMobileBrowser} from "../mobile_check.js";
 (function() {
 	var div = document.getElementById("game");
 	var game = initGame(div, 480, 480*2);
@@ -58,14 +59,13 @@ import {initPong, updatePong} from "./pong.mjs";
   var paddle = pong.paddle;
 	game.draw = function(ctx) {
     ctx.beginPath();
-		ctx.arc(ball.x, ball.y, 25, 0, 2*Math.PI);
+		ctx.arc(ball.x, ball.y, ball.r, 0, 2*Math.PI);
     ctx.closePath();
     ctx.fillStyle = "blue";
 		ctx.fill();
 
     var p_pts = paddle.points();
-    //console.log(p_ends);
-    ctx.lineWidth = 10;
+    ctx.lineWidth = paddle.r*2;
     ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(p_pts[0], p_pts[1]);
@@ -82,60 +82,74 @@ import {initPong, updatePong} from "./pong.mjs";
       ctx.fillStyle = "#FF000080";
       ctx.fill();
     }
+
+    if (game.paused) {
+      ctx.fillStyle = "#00000030";
+      ctx.fillRect(0,0,game.width,game.height);
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 30px arial";
+      var txt = "Fullscreen to Unpause";
+      var txt_box = ctx.measureText(txt);
+      var txt_x = (game.width-txt_box.width)/2;
+      var txt_y = (game.height-(txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent))/2;
+      ctx.fillText(txt, txt_x, txt_y);
+    }
 	};
   game.update = function(dt) {
-    if (game.touchesDown.length === 0) {
-      game.pong.paddle.x_dir = 0;
-      game.pong.paddle.angle_dir = 0;
-    } else {
-      var x;
-      if (game.touchesDown.length === 1) {
-        game.pong.paddle.angle_dir = 0;
-        var t = game.touchesDown[0];
-        x = t.x;
-      } else if (game.touchesDown.length === 2) {
-        var t0 = game.touchesDown[0];
-        var t1 = game.touchesDown[1];
-        if (t1.x < t0.x) {
-          var tmp = t0;
-          t0 = t1;
-          t1 = tmp;
-        }
-        x = (t0.x+t1.x)/2;
-        var dx = t1.x-t0.x;
-        var dy = t1.y-t0.y;
-        var angle = Math.atan2(dy, dx);
-        game.debug = 'dy: '+dy.toFixed(2)+
-          '\ndx: '+dx.toFixed(2)+
-          '\nangle: '+angle.toFixed(2)+
-          '\np.angle: '+game.pong.paddle.angle.toFixed(2);
-        if (angle < (game.pong.paddle.angle-0.05)) {
-          game.pong.paddle.angle_dir = -1;
-          game.debug = game.debug + '  reached1';
-        } else if (angle > (game.pong.paddle.angle+0.05)) {
-          game.pong.paddle.angle_dir = 1;
-          game.debug = game.debug + '  reached2';
-        } else {
-          game.pong.paddle.angle_dir = 0;
-          game.debug = game.debug + '  reached0';
-        }
-      }
-      if (x < game.pong.paddle.x-5) {
-        game.pong.paddle.x_dir = -1;
-      } else if (x > paddle.x+5) {
-        game.pong.paddle.x_dir = 1;
-      } else {
+    if (!isFullscreen()) {
+      game.paused = true; 
+      return;
+    }
+    if (isMobileBrowser()) {
+      if (game.touchesDown.length === 0) {
         game.pong.paddle.x_dir = 0;
+        game.pong.paddle.angle_dir = 0;
+      } else {
+        var x;
+        if (game.touchesDown.length === 1) {
+          game.pong.paddle.angle_dir = 0;
+          var t = game.touchesDown[0];
+          x = t.x;
+        } else if (game.touchesDown.length === 2) {
+          var t0 = game.touchesDown[0];
+          var t1 = game.touchesDown[1];
+          if (t1.x < t0.x) {
+            var tmp = t0;
+            t0 = t1;
+            t1 = tmp;
+          }
+          x = (t0.x+t1.x)/2;
+          var dx = t1.x-t0.x;
+          var dy = t1.y-t0.y;
+          var angle = Math.atan2(dy, dx);
+          if (angle < (game.pong.paddle.angle-0.05)) {
+            game.pong.paddle.angle_dir = -1;
+          } else if (angle > (game.pong.paddle.angle+0.05)) {
+            game.pong.paddle.angle_dir = 1;
+          } else {
+            game.pong.paddle.angle_dir = 0;
+          }
+        }
+        if (x < game.pong.paddle.x-5) {
+          game.pong.paddle.x_dir = -1;
+        } else if (x > paddle.x+5) {
+          game.pong.paddle.x_dir = 1;
+        } else {
+          game.pong.paddle.x_dir = 0;
+        }
       }
     }
 
     updatePong(dt, game);
   };
-  game.set_frame_interval(10);
+  game.set_frame_interval(20);
 
   var fs_button = document.getElementById("open_fullscreen");
   fs_button.onclick = function() {
     tryFullscreen(div);
+    setTimeout(function() {
+      game.paused = false;
+    }, 500);
   };
 
   document.addEventListener('keydown', function(e) {
@@ -161,6 +175,8 @@ import {initPong, updatePong} from "./pong.mjs";
     }
   });
   game.addTouchListener(function(e) {});
+  game.paused = true;
+  game.print_debug = true;
 })();
 </script>
 </body>

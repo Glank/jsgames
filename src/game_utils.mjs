@@ -48,7 +48,10 @@ export function initGame(div, width, height){
 		"on_mobile": isMobileBrowser(),
 		"rotated": false,
 		"_frame_interval": 50,
-		"debug": null
+		"print_debug": false,
+		"debug": {},
+		"avg_framerate": 0,
+		"paused": false
   };
   game.redraw = function() {
 		var ctx = display.getContext("2d");
@@ -62,12 +65,15 @@ export function initGame(div, width, height){
 				ctx.rotate(Math.PI/2);
 			}
       game.draw(ctx);
-			if(game.debug) {
+			if(game.print_debug) {
 				ctx.fillStyle = "#0000FF";
-        var lines = game.debug.split('\n');
-        for (var i = 0; i < lines.length; i++) {
-          ctx.fillText(lines[i], 2, 10+i*12);
-        }
+				ctx.font = "10px Courier";
+				ctx.fillText('FR: '+game.avg_framerate.toFixed(0), 2, 10);
+				var i = 0;
+				for (const [key, value] of Object.entries(game.debug)) {
+          ctx.fillText(''+key+': '+value, 2, 22+i*12);
+					i++;
+				}
 			}
 			ctx.restore();
     }
@@ -114,21 +120,19 @@ export function initGame(div, width, height){
 				game.container_overflow = "vertical";
 			}
 		}
-		if (game.update) {
-			if (performance.now) {
-				if (game._last_updated) {
-					var now = performance.now();
-					var delta = (now-game._last_updated)/1000.0;
-					game.update(delta);
-					game._last_updated = now;
-				} else {
-					game._last_updated = performance.now();
-					game.update(game._frame_interval/1000.0);
-				}
+		var dt = game._frame_interval/1000.0;
+		if (performance.now) {
+			if (game._last_updated) {
+				var now = performance.now();
+				dt = (now-game._last_updated)/1000.0;
+				game._last_updated = now;
 			} else {
-				game.update(game._frame_interval/1000.0);
+				game._last_updated = performance.now();
 			}
 		}
+		if (game.update && (!game.paused))
+			game.update(dt);
+		game.avg_framerate = (game.avg_framerate*15+(1/dt))/16;
 		window.requestAnimationFrame(game.redraw);
   };
   game._interval = window.setInterval(game._loop, game._frame_interval);
@@ -142,10 +146,15 @@ export function initGame(div, width, height){
 		var handler = function(e, catagory) {
 			var rect = display.getBoundingClientRect();
 			var touchesDown = [];
+			var x,y;
 			for (var i = 0; i < e.touches.length; i++) {
-				// TODO: handle rotated screens
-				var x = (e.touches[i].clientX - rect.left)/rect.width*display.width;
-				var y = (e.touches[i].clientY - rect.top)/rect.height*display.height;
+				if (game.rotated) {
+					y = game.height-(e.touches[i].clientX - rect.left)/rect.width*display.width;
+					x = (e.touches[i].clientY - rect.top)/rect.height*display.height;
+				} else {
+					x = (e.touches[i].clientX - rect.left)/rect.width*display.width;
+					y = (e.touches[i].clientY - rect.top)/rect.height*display.height;
+				}
 				touchesDown[i] = {'x':x, 'y':y};
 			}
 			game.touchesDown = touchesDown;

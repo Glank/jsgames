@@ -4,6 +4,7 @@ function initBall(game) {
 	var ball = {
 		'x': game.width/2.0,
 		'y': game.height/2.0,
+    'r': 25,
 		'speed': game.height/4.0, // pixels per second
     'max_speed': game.height*2,
 	};
@@ -15,6 +16,7 @@ function initPaddle(game) {
 	var p = {
 		'x': game.width/2.0,
 		'y': game.height-50,
+    'r': 5,
 		'angle': 0,
 		'max_angle': Math.PI/4,
 		'length': game.width/5.0,
