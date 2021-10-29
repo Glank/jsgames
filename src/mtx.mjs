@@ -92,27 +92,12 @@ export function mult_s_add_v2(s, v, w, out) {
   return out;
 }
 
-export var isqrt = function(x) {
-  return 1/Math.sqrt(x);
-}
-if (ArrayBuffer && Float32Array && Uint32Array) {
-  // fast inverse square root
-  // https://gist.github.com/Starfys/aaaee80838d0e013c27d
-  const buf = new ArrayBuffer(4)
-  const f32 = new Float32Array(buf)
-  const u32 = new Uint32Array(buf)
-  isqrt = function(x) {
-    const x2 = 0.5 * (f32[0] = x);
-    u32[0] = (0x5f3759df - (u32[0] >> 1));
-    let y = f32[0];
-    y = y * (1.5 - (x2 * y * y));
-    // use two newton's methods iterations for higher accuracy
-    y = y * (1.5 - (x2 * y * y));
-    return y;
-  }
+export function length_v2(v) {
+  return Math.sqrt(v[0]*v[0]+v[1]*v[1]);
 }
 
 export function normalize_v2(v, out) {
-  var s = isqrt(v[0]*v[0]+v[1]*v[1]);
+  var s = 1/Math.sqrt(v[0]*v[0]+v[1]*v[1]);
   return mult_s_v2(s, v, out);
 }
+

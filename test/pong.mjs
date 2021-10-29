@@ -170,8 +170,15 @@ function testReflect2() {
   assert(approx_v2(r, -1, 0), 'reflection should be <-1,0> not '+r);
 }
 
+function testPBSD() {
+  // test paddle_ball_sdist
+  // paddle_ball_sdist(pa, pb, pr, b, br)
+  assert(false, 'TODO');
+}
+
 testBall();
 testOrthDist();
 testCollisions();
 testReflect1();
 testReflect2();
+testPBSD();

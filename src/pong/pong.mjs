@@ -208,7 +208,7 @@ function moving_segment_and_point_collision(seg_start, seg_end, point_start, poi
 	const p = mtx.uninit_v2();
 	mtx.sub_v2(c.p, c.a, p);
 	// scale system down to normalize ab
-	const s = mtx.isqrt(mtx.dot_v2(ab, ab));
+	const s = 1/Math.sqrt(mtx.dot_v2(ab, ab));
 	mtx.mult_s_v2(s, ab, ab);
 	mtx.mult_s_v2(s, p, p);
 	// rotate system to place ab on the x axis
@@ -249,10 +249,39 @@ function reflect(ra, rb, wa, wb, c) {
 	return r;
 }
 
+function paddle_ball_sdist(pa, pb, pr, b, br) {
+	// step 1) translate to put pa on the origin
+	const pb1 = mtx.uninit_v2();
+	const b1 = mtx.uninit_v2();
+	mtx.sub(bp, pa, pb1);
+	mtx.sub(b, pa, b1);
+	// step 2) rotate to put pb on the positive x axis
+	const pb_norm = mtx.uninit_v2();
+	// manualy normalizing pb because we'll use the length later
+	const len = mtx.length_v2(pb1);
+	mtx.mult_s_v2(1/len, pb1, pb_norm);
+	const rot = mt.create_2x2(
+		pb_norm[0], pb_norm[1],
+		-pb_norm[1], pb_norm[0]
+	);
+	const b2 = pb_norm; // pb_norm no longer needed, reusing memory
+	mtx.mult_2x2_v2(rot, b1, b2);
+	// step 3) return sdist depending if the ball is within the paddle's enpoints x range.
+	if (b2[0] < 0) {
+		return mtx.length_v2(b2)-(br+pr);
+	} else if (b2[0] > len) {
+		const dx = b2[0]-len;
+		return Math.sqrt(dx*dx+b2[1]*b2[1])-(br+pr);
+	} else {
+		return Math.abs(b2[1])-(br+pr);
+	}
+}
+
 // exports for testing purposes only
 export var _test = {
 	'sgnd_orth_dist': sgnd_orth_dist,
 	'moving_line_and_point_collision': moving_line_and_point_collision,
 	'moving_segment_and_point_collision': moving_segment_and_point_collision,
-	'reflect': reflect
+	'reflect': reflect,
+	'paddle_ball_sdist': paddle_ball_sdist
 };
