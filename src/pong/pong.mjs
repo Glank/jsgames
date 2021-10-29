@@ -249,7 +249,12 @@ function reflect(ra, rb, wa, wb, c) {
 	return r;
 }
 
-function paddle_ball_sdist(pa, pb, pr, b, br) {
+// returns the signed distance between the paddle and the ball
+// if sdist approx 0
+// puts closest approx of the collision point in cout
+// puts closest approx of the unit normal from the collision point on the paddle in nout	
+// cout and nout might be modified even if sdist isn't approx 0
+function paddle_ball_sdist(pa, pb, pr, b, br, cout, nout) {
 	// step 1) translate to put pa on the origin
 	const pb1 = mtx.uninit_v2();
 	const b1 = mtx.uninit_v2();
@@ -266,15 +271,89 @@ function paddle_ball_sdist(pa, pb, pr, b, br) {
 	);
 	const b2 = pb_norm; // pb_norm no longer needed, reusing memory
 	mtx.mult_2x2_v2(rot, b1, b2);
-	// step 3) return sdist depending if the ball is within the paddle's enpoints x range.
+	// step 3) find the closest point depending if the ball is within the paddle's enpoints x range.
+	//         and calc cout and nout, undoing the previous transformations on them as well.
 	if (b2[0] < 0) {
-		return mtx.length_v2(b2)-(br+pr);
+		const l = mtx.length_v2(b2);
+		if (cout !== null) {
+			var tmp = rot[1];
+			rot[1] = rot[2];
+			rot[2] = tmp;
+			const nout1 = b1; // reusing memory
+			mtx.mult_s_v2(1/l, b2, nout1);
+			mtx.mult_2x2_v2(rot, nout1, nout);
+			mtx.mult_s_add_v2(pr, nout, pa, cout);
+		}
+		return l-(br+pr);
 	} else if (b2[0] > len) {
-		const dx = b2[0]-len;
-		return Math.sqrt(dx*dx+b2[1]*b2[1])-(br+pr);
+		b2[0]-=len;
+		const l = mtx.length_v2(b2);
+		if (cout !== null) {
+			var tmp = rot[1];
+			rot[1] = rot[2];
+			rot[2] = tmp;
+			const nout1 = b1; // reusing memory
+			mtx.mult_s_v2(1/l, b2, nout1);
+			mtx.mult_2x2_v2(rot, nout1, nout);
+			mtx.mult_s_add_v2(pr, nout, pb, cout);
+		}
+		return l-(br+pr);
 	} else {
+		if(cout !== null) {
+			var tmp = rot[1];
+			rot[1] = rot[2];
+			rot[2] = tmp;
+			const nout1 = b1; // reusing memory
+			nout1[0] =	0;	
+			nout1[1] = b2[1] < 0 ? -1 : 1;
+			mtx.mult_2x2_v2(rot, nout1, nout);
+			cout[0] = b2[0];
+			cout[1] = nout1[1]*pr;
+			const cout1 = nout1; // reusing memory
+			mtx.mult_2x2_v2(rot, cout, cout1);
+			mtx.add_v2(cout1, pa, cout);
+		}
 		return Math.abs(b2[1])-(br+pr);
 	}
+}
+
+// obj1 and obj2 are given at t=0
+// obj1_update and obj2_update are functions which take obj1 and t or obj2 and t and update them to be at a new position (0 <= t <= 1)
+// sdist is a signed distance function that takes obj1 and obj2, a negative value indicates an overlap
+// collision is a callback that takes obj1, obj2, and t
+// sdist is assumed to have at most one contiguous range where it is 0 when t is between 0 and 1 inclusively
+export function detect_collision(obj1, obj2, obj1_update, obj2_update, sdist, collision) {
+	var min_t = 0;
+	var min_sdist = sdist(obj1, obj2);
+	if (min_sdist <= 0) {
+		collision(obj1, obj2, 0);
+	}
+	var max_t = 1;
+	obj1 = obj1_update(obj1, max_t);
+	obj2 = obj2_update(obj2, max_t);
+	var max_sdist = sdist(obj1, obj2);
+	if (max_sdist > 0) {
+		// assume there will never be a collision since sdist apparently never goes neg
+		return;
+	}
+	
+	var mid_t, mid_sdist;
+	// do n iterations of binary search to find the crossover point
+	for (var i = 0; i < 5; i++) {
+		mid_t = 0.5*(min_t+max_t);
+		obj1 = obj1_update(obj1, max_t);
+		obj2 = obj2_update(obj2, max_t);
+		mid_sdist = sdist(obj1, obj2);
+		if (mid_sdist > 0) {
+			min_t = mid_t;
+		} else {
+			max_t = mid_t;
+		}
+	}
+	mid_t = 0.5*(min_t+max_t);
+	obj1 = obj1_update(obj1, max_t);
+	obj2 = obj2_update(obj2, max_t);
+	collision(obj1, obj2, mid_t);
 }
 
 // exports for testing purposes only
@@ -283,5 +362,6 @@ export var _test = {
 	'moving_line_and_point_collision': moving_line_and_point_collision,
 	'moving_segment_and_point_collision': moving_segment_and_point_collision,
 	'reflect': reflect,
-	'paddle_ball_sdist': paddle_ball_sdist
+	'paddle_ball_sdist': paddle_ball_sdist,
+	'detect_collision': detect_collision
 };

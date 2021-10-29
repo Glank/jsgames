@@ -38,8 +38,8 @@ function testOrthDist() {
   assert(approx(d, 0), 'dist should be approx 0, not '+d);
 }
 
-function approx_v2(v, s0, s1, err){
-  return approx(v[0], s0, err) && approx(v[1], s1, err);
+function approx_v2(v1, v2, err){
+  return approx(v1[0], v2[0], err) && approx(v1[1], v2[1], err);
 }
   
 
@@ -52,9 +52,9 @@ function testCollision1() {
     line_start, line_end, point_start, point_end);
   assert(c !== null, 'expected collision');
   assert(approx(c.t, 0.5), 'collision should be at t~=0.5');
-  assert(approx_v2(c.p, 1, 0), 'collision should be at p~=<1, 0>');
-  assert(approx_v2(c.a, 0, 0), 'collision should be at a~=<0, 0>');
-  assert(approx_v2(c.b, 2, 0), 'collision should be at b~=<2, 0>');
+  assert(approx_v2(c.p, [1, 0]), 'collision should be at p~=<1, 0>');
+  assert(approx_v2(c.a, [0, 0]), 'collision should be at a~=<0, 0>');
+  assert(approx_v2(c.b, [2, 0]), 'collision should be at b~=<2, 0>');
 }
 
 function testCollision2() {
@@ -66,9 +66,9 @@ function testCollision2() {
     line_start, line_end, point_start, point_end);
   assert(c !== null, 'expected collision');
   assert(approx(c.t, 0.5), 'collision should be at t~=0.5');
-  assert(approx_v2(c.p, 1, 0), 'collision should be at p~=<1, 0>');
-  assert(approx_v2(c.a, 0, 0), 'collision should be at a~=<0, 0>');
-  assert(approx_v2(c.b, 2, 0), 'collision should be at b~=<2, 0>');
+  assert(approx_v2(c.p, [1, 0]), 'collision should be at p~=<1, 0>');
+  assert(approx_v2(c.a, [0, 0]), 'collision should be at a~=<0, 0>');
+  assert(approx_v2(c.b, [2, 0]), 'collision should be at b~=<2, 0>');
 }
 
 function testCollision3() {
@@ -80,9 +80,9 @@ function testCollision3() {
     line_start, line_end, point_start, point_end);
   assert(c !== null, 'expected collision');
   assert(approx(c.t, 0.5), 'collision should be at t~=0.5');
-  assert(approx_v2(c.p, 1, 1), 'collision should be at p~=<1, 1>');
-  assert(approx_v2(c.a, 0, 0), 'collision should be at a~=<0, 0>');
-  assert(approx_v2(c.b, 1, 1), 'collision should be at b~=<1, 1>');
+  assert(approx_v2(c.p, [1, 1]), 'collision should be at p~=<1, 1>');
+  assert(approx_v2(c.a, [0, 0]), 'collision should be at a~=<0, 0>');
+  assert(approx_v2(c.b, [1, 1]), 'collision should be at b~=<1, 1>');
 }
 
 function testCollision4() {
@@ -94,9 +94,9 @@ function testCollision4() {
     line_start, line_end, point_start, point_end);
   assert(c!== null, 'expected collision');
   assert(approx(c.t, 0.5), 'collision should be at t~=0.5');
-  assert(approx_v2(c.p, 1, 1), 'collision should be at p~=<1, 1>');
-  assert(approx_v2(c.a, 0, 0), 'collision should be at a~=<0, 0>');
-  assert(approx_v2(c.b, 1, 1), 'collision should be at b~=<1, 1>');
+  assert(approx_v2(c.p, [1, 1]), 'collision should be at p~=<1, 1>');
+  assert(approx_v2(c.a, [0, 0]), 'collision should be at a~=<0, 0>');
+  assert(approx_v2(c.b, [1, 1]), 'collision should be at b~=<1, 1>');
 }
 
 function testCollision5() {
@@ -134,9 +134,9 @@ function testCollision7() {
     seg_start, seg_end, point_start, point_end);
   assert(c !== null, 'expected collision');
   assert(approx(c.t, 0.5), 'collision should be at t~=0.5');
-  assert(approx_v2(c.p, 1, 0), 'collision should be at p~=<1, 0>');
-  assert(approx_v2(c.a, 0, 0), 'collision should be at a~=<0, 0>');
-  assert(approx_v2(c.b, 2, 0), 'collision should be at b~=<2, 0>');
+  assert(approx_v2(c.p, [1, 0]), 'collision should be at p~=<1, 0>');
+  assert(approx_v2(c.a, [0, 0]), 'collision should be at a~=<0, 0>');
+  assert(approx_v2(c.b, [2, 0]), 'collision should be at b~=<2, 0>');
   assert(approx(c.s, 0.5), 'collision should be at s~=0.5');
 }
 
@@ -157,7 +157,7 @@ function testReflect1() {
   var wb = mtx.create_v2(1,0);
   var c = mtx.create_v2(0,0);
   var r = _test.reflect(ra, rb, wa, wb, c);
-  assert(approx_v2(r, 0, 1), 'reflection should be <0,1> not '+r);
+  assert(approx_v2(r, [0, 1]), 'reflection should be <0,1> not '+r);
 }
 
 function testReflect2() {
@@ -167,28 +167,43 @@ function testReflect2() {
   var wb = mtx.create_v2(1,1);
   var c = mtx.create_v2(0,0);
   var r = _test.reflect(ra, rb, wa, wb, c);
-  assert(approx_v2(r, -1, 0), 'reflection should be <-1,0> not '+r);
+  assert(approx_v2(r, [-1, 0]), 'reflection should be <-1,0> not '+r);
 }
 
 function testPBSD() {
   // test paddle_ball_sdist
-  // paddle_ball_sdist(pa, pb, pr, b, br)
+  // paddle_ball_sdist(pa, pb, pr, b, br, cout, nout)
 	var base_cases = [
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(0,0), 1], -2],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-1,0), 1], -1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-2,0), 1], 0],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-3,0), 1], 1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(2,0), 1], -2],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(3,0), 1], -1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(4,0), 1], 0],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(5,0), 1], 1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,0), 1], -2],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,1), 1], -1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,2), 1], 0],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,3), 1], 1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-1), 1], -1],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-2), 1], 0],
-		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-3), 1], 1]
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(0,0), 1],
+     [-2, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-1,0), 1],
+     [-1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-2,0), 1],
+     [0, mtx.create_v2(-1,0), mtx.create_v2(-1, 0)]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-3,0), 1],
+     [1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(2,0), 1],
+     [-2, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(3,0), 1],
+     [-1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(4,0), 1],
+     [0, mtx.create_v2(3,0), mtx.create_v2(1,0)]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(5,0), 1],
+     [1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,0), 1],
+     [-2, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,1), 1],
+     [-1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,2), 1],
+     [0, mtx.create_v2(1,1), mtx.create_v2(0,1)]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,3), 1],
+     [1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-1), 1],
+     [-1, null, null]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-2), 1],
+     [0, mtx.create_v2(1,-1), mtx.create_v2(0,-1)]],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-3), 1],
+      [1, null, null]]
 	];
 	var rotations = [
 		0*Math.PI,
@@ -209,6 +224,8 @@ function testPBSD() {
 		mtx.create_v2(-1,-1)
 	];
 	var transform = function(ri, ti, p) {
+    if(p===null)
+      return null;
 		var r = rotations[ri];
 		var t = translations[ti];
 		var rot = mtx.create_2x2(
@@ -221,18 +238,35 @@ function testPBSD() {
 		mtx.add_v2(p1, t, p2);
 		return p2;
 	};
+  var act_cout = mtx.create_v2(0,0);
+  var act_nout = mtx.create_v2(0,0);
 	for(var c = 0; c < base_cases.length; c++) {
 		for(var r = 0; r < rotations.length; r++) {
 			for(var t = 0; t < translations.length; t++) {
 				var params = base_cases[c][0];
-				var exp = base_cases[c][1];
-				params[0] = transform(r,t,params[0]);
-				params[1] = transform(r,t,params[1]);
-				params[3] = transform(r,t,params[3]);
-				var act = _test.paddle_ball_sdist(
-					params[0], params[1], params[2], params[3], params[4]);
-				assert(approx(exp, act),
-					'Expected '+exp+' but got '+act+' in case '+c+', '+r+', '+t);
+				var exp_sdist = base_cases[c][1][0];
+        var exp_cout = transform(r,t,base_cases[c][1][1]);
+        var exp_nout = transform(r,0,base_cases[c][1][2]); // don't translate the normal
+				var pa = transform(r,t,params[0]);
+				var pb = transform(r,t,params[1]);
+				var b = transform(r,t,params[3]);
+        var sdist_wo_out = _test.paddle_ball_sdist(
+					pa, pb, params[2], b, params[4],
+          null, null);
+				var act_sdist = _test.paddle_ball_sdist(
+					pa, pb, params[2], b, params[4],
+          act_cout, act_nout);
+        assert(sdist_wo_out == act_sdist, "sdist shouldn't change without output params");
+				assert(approx(exp_sdist, act_sdist),
+					'Expected sdist '+exp_sdist+' but got '+act_sdist+' in case '+c+', '+r+', '+t);
+        if(exp_cout) {
+          assert(approx_v2(exp_cout, act_cout),
+            'Expected cout '+exp_cout+' but got '+act_cout+' in case '+c+', '+r+', '+t);
+        }
+        if(exp_nout) {
+          assert(approx_v2(exp_nout, act_nout),
+            'Expected nout '+exp_nout+' but got '+act_nout+' in case '+c+', '+r+', '+t);
+        }
 			}
 		}
 	}
