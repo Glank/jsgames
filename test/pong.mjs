@@ -173,7 +173,69 @@ function testReflect2() {
 function testPBSD() {
   // test paddle_ball_sdist
   // paddle_ball_sdist(pa, pb, pr, b, br)
-  assert(false, 'TODO');
+	var base_cases = [
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(0,0), 1], -2],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-1,0), 1], -1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-2,0), 1], 0],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(-3,0), 1], 1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(2,0), 1], -2],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(3,0), 1], -1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(4,0), 1], 0],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(5,0), 1], 1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,0), 1], -2],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,1), 1], -1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,2), 1], 0],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,3), 1], 1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-1), 1], -1],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-2), 1], 0],
+		[[mtx.create_v2(0,0), mtx.create_v2(2,0), 1, mtx.create_v2(1,-3), 1], 1]
+	];
+	var rotations = [
+		0*Math.PI,
+		0.37*Math.PI,
+		0.74*Math.PI,
+		1.2*Math.PI,
+		1.86*Math.PI
+	];
+	var translations = [
+		mtx.create_v2(0,0),
+		mtx.create_v2(0.1, 0),
+		mtx.create_v2(-0.1, 0),
+		mtx.create_v2(0, 0.1),
+		mtx.create_v2(0, -0.1),
+		mtx.create_v2(-1,2),
+		mtx.create_v2(2,-3.5),
+		mtx.create_v2(0.12,0.75),
+		mtx.create_v2(-1,-1)
+	];
+	var transform = function(ri, ti, p) {
+		var r = rotations[ri];
+		var t = translations[ti];
+		var rot = mtx.create_2x2(
+			Math.cos(r), -Math.sin(r),
+			Math.sin(r), Math.cos(r)
+		);
+		var p1 = mtx.uninit_v2();
+		var p2 = mtx.uninit_v2();
+		mtx.mult_2x2_v2(rot, p, p1);
+		mtx.add_v2(p1, t, p2);
+		return p2;
+	};
+	for(var c = 0; c < base_cases.length; c++) {
+		for(var r = 0; r < rotations.length; r++) {
+			for(var t = 0; t < translations.length; t++) {
+				var params = base_cases[c][0];
+				var exp = base_cases[c][1];
+				params[0] = transform(r,t,params[0]);
+				params[1] = transform(r,t,params[1]);
+				params[3] = transform(r,t,params[3]);
+				var act = _test.paddle_ball_sdist(
+					params[0], params[1], params[2], params[3], params[4]);
+				assert(approx(exp, act),
+					'Expected '+exp+' but got '+act+' in case '+c+', '+r+', '+t);
+			}
+		}
+	}
 }
 
 testBall();

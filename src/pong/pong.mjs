@@ -253,14 +253,14 @@ function paddle_ball_sdist(pa, pb, pr, b, br) {
 	// step 1) translate to put pa on the origin
 	const pb1 = mtx.uninit_v2();
 	const b1 = mtx.uninit_v2();
-	mtx.sub(bp, pa, pb1);
-	mtx.sub(b, pa, b1);
+	mtx.sub_v2(pb, pa, pb1);
+	mtx.sub_v2(b, pa, b1);
 	// step 2) rotate to put pb on the positive x axis
 	const pb_norm = mtx.uninit_v2();
 	// manualy normalizing pb because we'll use the length later
 	const len = mtx.length_v2(pb1);
 	mtx.mult_s_v2(1/len, pb1, pb_norm);
-	const rot = mt.create_2x2(
+	const rot = mtx.create_2x2(
 		pb_norm[0], pb_norm[1],
 		-pb_norm[1], pb_norm[0]
 	);

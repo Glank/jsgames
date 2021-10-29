@@ -78,6 +78,12 @@ export function mult_s_v2(s, v, out) {
   return out;
 }
 
+export function add_v2(a, b, out) {
+  out[0] = a[0]+b[0];
+  out[1] = a[1]+b[1];
+  return out;
+}
+
 // out = a-b
 export function sub_v2(a, b, out) {
   out[0] = a[0]-b[0];
