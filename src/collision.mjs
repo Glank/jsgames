@@ -11,7 +11,7 @@ export function exhaustive(bodies, testCollision) {
 	}
 }
 
-// TODO: implement sweep and prune
+// TODO: implement a more efficient broad pass
 
 export class CollisionEngine {
 	constructor() {
@@ -34,6 +34,14 @@ export class CollisionEngine {
 			"circle:inf_bound": {
 				"call_type": "ds",
 				"test": _test_collision_circle_inf_bound
+			},
+			"circle:rline": {
+				"call_type": "ss",
+				"test": _test_collision_circle_rline
+			},
+			"rline:inf_bound": {
+				"call_type": "ds",
+				"test": _test_collision_rline_inf_bound
 			}
 		}
 	}
@@ -151,7 +159,24 @@ class CollisionBody {
 				return mtx.sub_v2(this._params.center, this._prev_params.center, out || mtx.uninit_v2());
 			};
 		} else if (this._type === 'rline') {
-			// TODO
+			this.translate = function(delta) {
+				mtx.add_v2(delta, this._params.p1, this._params.p1);
+				mtx.add_v2(delta, this._params.p2, this._params.p2);
+			};
+			this._copy_params = function(out) {
+				out = out || {};
+				out.radius = this._params.radius;
+				out.p1 = mtx.copy_v2(this._params.p1, out.p1 | mtx.uninit_v2());
+				out.p2 = mtx.copy_v2(this._params.p2, out.p2 | mtx.uninit_v2());
+				return out;
+			}
+			this.travel = function(out) {
+				var center_start = mtx.uninit_v2();
+				mtx.average_v2(this._params.p1, this._params.p2, center_start);
+				var center_end = mtx.uninit_v2();
+				mtx.average_v2(this._prev_params.p1, this._prev_params.p2, center_start);
+				return mtx.sub_v2(center_end, center_start, out || mtx.uninit_v2());
+			}
 		} else if (this._type === 'inf_bound') {
 			this._copy_params = function() {
 				return {
@@ -250,6 +275,66 @@ function _test_collision_circle_circle(circleA, circleB) {
 	// the normal acting against circleA
 	collision._normal1 = mtx.mult_s_v2(-1, collision._normal2, a_to_b);
 	return collision;
+}
+
+function _test_collision_rline_inf_bound(rline1, rline2, inf_bound) {
+	var rline1_c1 = {
+		radius: rline1.radius,
+		center: rline1.p1
+	};
+	var rline1_c2 = {
+		radius: rline1.radius,
+		center: rline1.p2
+	};
+	var rline2_c1 = {
+		radius: rline2.radius,
+		center: rline2.p1
+	};
+	var rline2_c2 = {
+		radius: rline2.radius,
+		center: rline2.p2
+	};
+	var collision1 = _test_collision_circle_inf_bound(rline1_c1, rline2_c1, inf_bound);
+	var collision2 = _test_collision_circle_inf_bound(rline1_c2, rline2_c2, inf_bound);
+	if (!collision1 || !collision2)
+		return collision1 || collision2;
+	if (collision1.t <= collision2.t)
+		return collision1;
+	return collision2;
+}
+
+function _test_collision_circle_rline(circle, rline) {
+	// get the vector from the start to the end of rline
+	var p12 = mtx.sub_v2(rline.p2, rline.p1, mtx.uninit_v2());
+	// get the projection of the circle's center along p12
+	var s = mtx.dot_v2(p12, circle.center)/mtx.dot_v2(p12, p12);
+	if (0 < s && s < 1) {
+		var proj = mtx.mult_s_v2(s, p12, mtx.uninit_v2());
+		// use that to get the normal from the rline to the circle's center
+		var norm = mtx.add_v2(rline.p1, proj, mts.uninit_v2());
+		mtx.sub_v2(circle.center, norm, norm);
+		var d = mtx.length_v2(norm);
+		if (d <= circle.radius + rline.radius) {
+			mtx.normalize_v2(norm, norm);
+			var collision = {
+				_normal1: norm, // the normal acting against the circle
+				_normal2: mtx.mult_s_v2(-1, norm, mtx.uninit_v2()), // the normal acting against the rline
+				t: 1
+			}
+		}
+	}
+	var rline_c1 = {
+		radius: rline.radius,
+		center: rline.p1
+	};
+	var collision = _test_collision_circle_circle(rline_c1, circle);
+	if (collision)
+		return collision;
+	var rline_c2 = {
+		radius: rline.radius,
+		center: rline.p2
+	};
+	return _test_collision_circle_circle(rline_c2, circle);
 }
 
 export function initCircle(center, radius) {

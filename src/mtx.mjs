@@ -119,3 +119,9 @@ export function set_v2(s0, s1, out) {
   return out;
 }
 
+export function average_v2(v1, v2, out) {
+  out[0] = 0.5*(v1[0]+v2[0]);
+  out[1] = 0.5*(v1[1]+v2[1]);
+  return out;
+}
+
