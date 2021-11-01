@@ -71,7 +71,7 @@ def validate_args():
   assert len(args) == 0
 
 def run_test(test_dir, test_fn):
-  cmd('nodejs {}'.format(os.path.join(test_dir, test_fn)))
+  cmd('nodejs --trace-uncaught {}'.format(os.path.join(test_dir, test_fn)))
 
 def run_tests():
   global FLAGS 

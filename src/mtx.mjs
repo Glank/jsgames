@@ -107,3 +107,15 @@ export function normalize_v2(v, out) {
   return mult_s_v2(s, v, out);
 }
 
+export function copy_v2(v, out) {
+  out[0] = v[0];
+  out[1] = v[1];
+  return out;
+}
+
+export function set_v2(s0, s1, out) {
+  out[0] = s0;
+  out[1] = s1;
+  return out;
+}
+
