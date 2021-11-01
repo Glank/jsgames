@@ -51,7 +51,8 @@ export function initGame(div, width, height){
 		"print_debug": false,
 		"debug": {},
 		"avg_framerate": 0,
-		"paused": false
+		"paused": false,
+    "max_dt": 0.1,
   };
   game.redraw = function() {
 		var ctx = display.getContext("2d");
@@ -131,7 +132,7 @@ export function initGame(div, width, height){
 			}
 		}
 		if (game.update && (!game.paused))
-			game.update(dt);
+			game.update(Math.min(dt, game.max_dt));
 		game.avg_framerate = (game.avg_framerate*15+(1/dt))/16;
 		window.requestAnimationFrame(game.redraw);
   };

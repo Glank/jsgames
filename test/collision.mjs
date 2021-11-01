@@ -115,8 +115,10 @@ function basicBounce() {
   });
   engine.update(1.0);
   assert(collision_occured, "Expected ball to collide with boundary.");
-
-  var diff = mtx.length_v2(mtx.sub_v2(physics.velocity, mtx.create_v2(5,0), mtx.uninit_v2()))
+  
+  var diff = mtx.length_v2(mtx.sub_v2(circle._params.center, mtx.create_v2(-3,0), mtx.uninit_v2()))
+  assert(approx(diff, 0), "Expectedthe new center to be (-3, 0)");
+  diff = mtx.length_v2(mtx.sub_v2(physics.velocity, mtx.create_v2(5,0), mtx.uninit_v2()))
   assert(approx(diff, 0), "Expected the new velocity to be <5,0>");
 }
 

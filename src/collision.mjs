@@ -27,6 +27,10 @@ export class CollisionEngine {
 		// dd: dynamic-dynamic test(body1start, body1end, body2start, body2end)
 		this.collision_tests = {
 			"inf_bound:inf_bound": "none",
+			"circle:circle": {
+				"call_type": "ss",
+				"test": _test_collision_circle_circle
+			},
 			"circle:inf_bound": {
 				"call_type": "ds",
 				"test": _test_collision_circle_inf_bound
@@ -71,7 +75,7 @@ export class CollisionEngine {
 			if (test === 'none')
 				return;
 			if (!test)
-				throw "No collision test for body interaction "+key;
+				throw new Error("No collision test for body interaction "+key);
 			var collision = null;
 			if (test.call_type === "ss")
 				collision = test.test(body1._params, body2._params);
@@ -80,7 +84,7 @@ export class CollisionEngine {
 			else if (test.call_type === "dd")
 				collision = test.test(body1._prev_params, body1._params, body2._prev_params, body2._params);
 			else
-				throw "Unknown collision test call_type: "+test.call_type;
+				throw new Error("Unknown collision test call_type: "+test.call_type);
 			if (collision) {
 				collision._body1_idx = body1._index;
 				collision._body2_idx = body2._index;
@@ -90,7 +94,7 @@ export class CollisionEngine {
 		this.broad_pass(this._bodies, testCollision);
 		collisions.sort(function cmp(a,b) { return a.t-b.t; });
 		for (var i in this._bodies) {
-			this._bodies[i]._old_overlapping = this._bodies[i]._overlapping || new Set();
+			this._bodies[i]._prev_overlapping = this._bodies[i]._overlapping || new Set();
 			this._bodies[i]._overlapping = new Set();
 		}
 		for (var i in collisions) {
@@ -99,8 +103,10 @@ export class CollisionEngine {
 			var body2 = this._bodies[collision._body2_idx];
 			body1._overlapping.add(body2._index);
 			body2._overlapping.add(body1._index);
-			if (body1._old_overlapping.has(body2._index))
+			if (body1._prev_overlapping.has(body2._index))
 				continue;
+
+			collision.real_interval = dt;
 
 			collision.other = body2;
 			collision.normal = collision._normal1;
@@ -114,7 +120,7 @@ export class CollisionEngine {
 		}
 		for (var i in this._bodies) {
 			var body = this._bodies[i];
-			body._prev_params = body._copy_params();
+			body._prev_params = body._copy_params(body._prev_params);
 		}
 	}
 }
@@ -128,17 +134,21 @@ class CollisionBody {
 		this._type = type;
 		this._params = params;
 		this._on_collision_callbacks = [];
-		this.translate = function() { throw 'Translate unsuported in CollisionBody '+type; };
-		this._copy_params = function() { throw '_copy_params not implemented for '+type; };
+		this.translate = function() { throw new Error('Translate unsuported in CollisionBody '+type); };
+		this._copy_params = function() { throw new Error('_copy_params not implemented for '+type); };
+		this.travel = function() { throw new Error('travel not implemented for '+type); };
 		if (this._type === 'circle') {
 			this.translate = function(delta) {
 				mtx.add_v2(delta, this._params.center, this._params.center);
 			};
-			this._copy_params = function() {
-				return {
-					radius:this._params.radius,
-					center:mtx.copy_v2(this._params.center, mtx.uninit_v2())
-				};
+			this._copy_params = function(out) {
+				out = out || {};
+				out.radius = this._params.radius;
+				out.center = mtx.copy_v2(this._params.center, out.center || mtx.uninit_v2());
+				return out;
+			};
+			this.travel = function(out) {
+				return mtx.sub_v2(this._params.center, this._prev_params.center, out || mtx.uninit_v2());
 			};
 		} else if (this._type === 'rline') {
 			// TODO
@@ -150,7 +160,7 @@ class CollisionBody {
 				};
 			};
 		} else {
-			throw 'Invalid CollisionBody type: '+type;
+			throw new Error('Invalid CollisionBody type: '+type);
 		}
 		// the parameters before any given physics update
 		this._prev_params = this._copy_params();
@@ -178,12 +188,21 @@ export class BasicPhysics {
 			this._on_collision = function(){};
 		} else if (behavior === 'bounce') {
 			this._on_collision = function(event){
-				// TODO: also lerp the body's position back and apply a scale of the new veocity.
+				// reflect the velocity using the normal
 				var s = -2*mtx.dot_v2(this.velocity, event.normal);
-				mtx.mult_s_add_v2(s, event.normal, this.velocity, this.velocity);
+				if (s > 0)
+					mtx.mult_s_add_v2(s, event.normal, this.velocity, this.velocity);
+				// back up to the point of collision
+				var backtravel = event.body.travel();
+				mtx.mult_s_v2(event.t-1, backtravel, backtravel);	
+				event.body.translate(backtravel);
+				// travel along the new velocity for the time after the bounce
+				var forwardtravel = mtx.mult_s_v2(
+					(1-event.t)*event.real_interval, this.velocity, mtx.uninit_v2());
+				event.body.translate(forwardtravel);
 			};
 		} else {
-			throw 'Invalid collision behavior: '+behavior;
+			throw new Error('Invalid collision behavior: '+behavior);
 		}
 	}
 }
@@ -215,6 +234,21 @@ function _test_collision_circle_inf_bound(circle1, circle2, inf_bound) {
 	collision.t = 1 - ((circle2.radius-d)/mtx.length_v2(c1c_to_c2c));
 	if (collision.t > 1) collision.t = 1;
 	if (collision.t < 0) collision.t = 0;
+	return collision;
+}
+
+function _test_collision_circle_circle(circleA, circleB) {
+	var a_to_b = mtx.sub_v2(circleB.center, circleA.center, mtx.uninit_v2());
+	var d = mtx.length_v2(a_to_b);
+	if (d > (circleA.radius+circleB.radius)) {
+		// no collision detected
+		return null;
+	}
+	var collision = {t:1};
+	// the normal acting against circleB
+	collision._normal2 = mtx.mult_s_v2(1/d, a_to_b, mtx.uninit_v2());
+	// the normal acting against circleA
+	collision._normal1 = mtx.mult_s_v2(-1, collision._normal2, a_to_b);
 	return collision;
 }
 

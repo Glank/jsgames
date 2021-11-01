@@ -1,6 +1,6 @@
 export function assert(condition, message) {
   if(!condition)
-    throw message
+    throw new Error(message);
 }
 
 export var TEST_APPROX_ERROR = 0.01;

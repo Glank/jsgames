@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Safari syntax */
+:-webkit-full-screen {
+  background-color: yellow;
+}
+
+/* IE11 */
+:-ms-fullscreen {
+  background-color: yellow;
+}
+
+/* Standard syntax */
+:fullscreen {
+  background-color: yellow;
+}
+
+/* Style the button */
+button {
+  padding: 20px;
+  font-size: 20px;
+}
+
+div {
+  height: 200px;
+  position: relative;
+}
+
+canvas {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+</style>
+</head>
+<body>
+
+
+<button id="open_fullscreen">Open Fullscreen</button>
+
+<div id="game">
+</div>
+
+<script type="module">
+import {initGame, tryFullscreen, isFullscreen} from "../game_utils.mjs";
+import * as collision from "../collision.mjs";
+function randomColor() {
+  var r = Math.trunc(Math.random()*256);
+  var g = Math.trunc(Math.random()*256);
+  var b = Math.trunc(Math.random()*256);
+  return '#'+r.toString(16)+g.toString(16)+b.toString(16);
+}
+(function() {
+	var div = document.getElementById("game");
+	var game = initGame(div, 480, 480*2);
+  var engine = new collision.CollisionEngine();
+  var balls = [];
+  var colors = [];
+  for (var i = 0; i < 10; i++) {
+    var x = Math.random()*game.width;
+    var y = Math.random()*game.height;
+    var theta = Math.random()*Math.PI*2;
+    var speed = game.width/2;
+    var ball = collision.initCircle([x, y], 20);
+    var ballPhysics = new collision.BasicPhysics('bounce');
+    ballPhysics.velocity = [speed*Math.cos(theta), speed*Math.sin(theta)];
+    engine.addBody(ball, ballPhysics);
+    balls.push(ball);
+    colors.push(randomColor());
+  }
+  // left wall
+  engine.addBody(collision.initInfiniteBoundary([0,0], [1, 0]));
+  // right
+  engine.addBody(collision.initInfiniteBoundary([game.width,0], [-1, 0]));
+  // top
+  engine.addBody(collision.initInfiniteBoundary([0,0], [0, 1]));
+  // bottom
+  engine.addBody(collision.initInfiniteBoundary([0,game.height], [0, -1]));
+	game.draw = function(ctx) {
+    for (var i = 0; i < balls.length; i++) {
+      var ball = balls[i];
+      ctx.beginPath();
+      ctx.arc(ball._params.center[0], ball._params.center[1], ball._params.radius, 0, 2*Math.PI);
+      ctx.closePath();
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+    }
+	};
+  game.update = function(dt) {
+    engine.update(dt);
+  };
+  game.set_frame_interval(20);
+
+  var fs_button = document.getElementById("open_fullscreen");
+  fs_button.onclick = function() {
+    tryFullscreen(div);
+  };
+
+  //game.addTouchListener(function(e) {});
+  game.print_debug = true;
+})();
+</script>
+</body>
+</html>
