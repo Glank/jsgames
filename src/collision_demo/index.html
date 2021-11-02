@@ -50,9 +50,10 @@ canvas {
 <script type="module">
 import {initGame, tryFullscreen, isFullscreen} from "../game_utils.mjs";
 import * as collision from "../collision.mjs";
+import * as mtx from "../mtx.mjs";
 function randomColor() {
   var r = 0, g = 0, b = 0;
-  while (r+g+b < 256) {
+  while (r+g+b < 500) {
     r = Math.trunc(Math.random()*256);
     g = Math.trunc(Math.random()*256);
     b = Math.trunc(Math.random()*256);
@@ -92,16 +93,16 @@ function randomColor() {
   // bottom
   engine.addBody(collision.initInfiniteBoundary([0,game.height], [0, -1]));
   // paddle
+  var paddleLength = 150;
+  var paddleCenter = [game.width/2, game.height-100];
+  var paddleAngle = 0;
   var paddle = collision.initRoundedLine(
-    [game.width/2-100, game.height-50],
-    [game.width/2+100, game.height-50],
-    10
+    [paddleCenter[0]+paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]+paddleLength/2*Math.sin(paddleAngle)],
+    [paddleCenter[0]-paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]-paddleLength/2*Math.sin(paddleAngle)],
+    7
   );
-  engine.addBody(paddle);
-  game.debug.hits = 0;
-  paddle.onCollision(function(event){
-    game.debug.hits++;
-  });
+  var paddlePhysics = new collision.BasicPhysics('stop');
+  engine.addBody(paddle, paddlePhysics);
 	game.draw = function(ctx) {
     for (var i = 0; i < balls.length; i++) {
       var ball = balls[i];
@@ -120,7 +121,17 @@ function randomColor() {
     ctx.strokeStyle = "black";
 		ctx.stroke();
 	};
+  var t = 0;
   game.update = function(dt) {
+    t += dt;
+    paddlePhysics.velocity[0] += 100*Math.sin(t*2*Math.PI/5);
+    paddleAngle = Math.PI/4*Math.sin(t*2*Math.PI/4);
+    paddleCenter = mtx.average_v2(paddle._params.p1, paddle._params.p2, mtx.uninit_v2());
+    paddle.setParameter('p1',
+      [paddleCenter[0]+paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]+paddleLength/2*Math.sin(paddleAngle)]);
+    paddle.setParameter('p2',
+      [paddleCenter[0]-paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]-paddleLength/2*Math.sin(paddleAngle)]);
+    game.debug.paddle = ""+paddleCenter[0].toFixed(2)+", "+paddleCenter[1].toFixed(2)+", "+paddleAngle;
     engine.update(dt);
   };
   game.set_frame_interval(20);

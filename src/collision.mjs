@@ -119,6 +119,18 @@ export class CollisionEngine {
 			var collision = collisions[i];
 			var body1 = this._bodies[collision._body1_idx];
 			var body2 = this._bodies[collision._body2_idx];
+			// These are debug constraints. They should always be true but are costly to calculate.
+			// TODO: remove in prod
+			if (collision._normal1) {
+				var l = mtx.length_v2(collision._normal1);
+				if (l < 0.999  || l > 1.001 )
+					throw new Error("Invalid _normal1 from "+body1._type+":"+body2._type+" of length "+l);
+			}	
+			if (collision._normal2) {
+				var l = mtx.length_v2(collision._normal2);
+				if (l < 0.999  || l > 1.001)
+					throw new Error("Invalid _normal2 from "+body1._type+":"+body2._type)+" of length "+l;
+			}	
 			body1._overlapping.add(body2._index);
 			body2._overlapping.add(body1._index);
 			collision.real_interval = dt;
@@ -184,9 +196,9 @@ class CollisionBody {
 			}
 			this.travel = function(out) {
 				var center_start = mtx.uninit_v2();
-				mtx.average_v2(this._params.p1, this._params.p2, center_start);
-				var center_end = mtx.uninit_v2();
 				mtx.average_v2(this._prev_params.p1, this._prev_params.p2, center_start);
+				var center_end = mtx.uninit_v2();
+				mtx.average_v2(this._params.p1, this._params.p2, center_end);
 				return mtx.sub_v2(center_end, center_start, out || mtx.uninit_v2());
 			}
 		} else if (this._type === 'inf_bound') {
@@ -216,34 +228,61 @@ class CollisionBody {
 }
 
 export class BasicPhysics {
-	constructor(collision_behavior) {
+	constructor(collision_behavior, params) {
 		this.velocity = mtx.create_v2(0,0);
 		this.acceleration = mtx.create_v2(0,0);
-		this.setCollisionBehavior(collision_behavior || 'none');
+		this.setCollisionBehavior(collision_behavior || 'none', params);
+		// a list of normals acting against this body preventing it from moving in that direction.
+		this._blocking_normals = [];
 	}
 	_update(body, dt) {
+		// update velocity based on blocking normals, clearing the blocking normals in the process
+		while (this._blocking_normals.length > 0) {
+			var normal = this._blocking_normals.pop();
+			var s = mtx.dot_v2(this.velocity, normal);
+			if (s < 0) {
+				// project the normal in the direction of the velocity
+				var n_proj = mtx.mult_s_v2(s/mtx.dot_v2(this.velocity, this.velocity), this.velocity, mtx.uninit_v2());
+				// remove a scale of that projection fromt the velocity
+				mtx.mult_s_add_v2(-s, n_proj, this.velocity, this.velocity);
+			}
+		}
 		body.translate(mtx.mult_s_v2(dt, this.velocity, mtx.uninit_v2()));
 		mtx.mult_s_add_v2(dt, this.acceleration, this.velocity, this.velocity);
 	}
-	setCollisionBehavior(behavior) {
+	setCollisionBehavior(behavior, params) {
+		this._params = params || {};
 		this._on_collision = function(){};
 		this._on_overlap = function(){};
+		this.behavior = behavior;
 		if (behavior === 'none') {
 			// keep defaults
-		} else if (behavior === 'bounce') {
+		} else if (behavior === 'bounce' || behavior === 'stop') {
+			if (!('bounciness' in this._params))
+				this._params.bounciness = 1;
+			if (this._params.bounciness < 0 || this._params.bounciness > 1)
+				throw new Exception("Invalid bounciness: "+this._params.bounciness);
 			this._on_overlap = function(event){
+				// prevent further travel in against the direction of the overlap
+				if (event.normal)
+					this._blocking_normals.push(mtx.copy_v2(event.normal, mtx.uninit_v2()));
 				// reflect the velocity using the normal if velocity is going against the normal
-				var s = -2*mtx.dot_v2(this.velocity, event.normal);
-				if (s > 0)
-					mtx.mult_s_add_v2(s, event.normal, this.velocity, this.velocity);
+				if (this.behavior === 'bounce') {
+					var s = -(1+this._params.bounciness)*mtx.dot_v2(this.velocity, event.normal);
+					if (s > 0) {
+						mtx.mult_s_add_v2(s, event.normal, this.velocity, this.velocity);
+					}
+				}
 				// back up to the point of collision
-				var backtravel = event.body.travel();
-				mtx.mult_s_v2(event.t-1, backtravel, backtravel);	
+				var backtravel = mtx.uninit_v2();
+				mtx.mult_s_v2(event.t-1, event.body.travel(), backtravel);	
 				event.body.translate(backtravel);
-				// travel along the new velocity for the time after the bounce
-				var forwardtravel = mtx.mult_s_v2(
-					(1-event.t)*event.real_interval, this.velocity, mtx.uninit_v2());
-				event.body.translate(forwardtravel);
+				if (this.behavior === 'bounce') {
+					// travel along the new velocity for the time after the bounce
+					var forwardtravel = mtx.mult_s_v2(
+						(1-event.t)*event.real_interval, this.velocity, mtx.uninit_v2());
+					event.body.translate(forwardtravel);
+				}
 			};
 		} else {
 			throw new Error('Invalid collision behavior: '+behavior);
@@ -315,8 +354,9 @@ function _test_collision_rline_inf_bound(rline1, rline2, inf_bound) {
 	};
 	var collision1 = _test_collision_circle_inf_bound(rline1_c1, rline2_c1, inf_bound);
 	var collision2 = _test_collision_circle_inf_bound(rline1_c2, rline2_c2, inf_bound);
-	if (!collision1 || !collision2)
+	if (!collision1 || !collision2) {
 		return collision1 || collision2;
+	}
 	if (collision1.t <= collision2.t)
 		return collision1;
 	return collision2;
