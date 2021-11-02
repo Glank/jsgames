@@ -55,6 +55,16 @@ export class CollisionEngine {
 			body._on_collision_callbacks[i](event);
 		}
 	}
+	_handle_overlap(body, event) {
+		event.body = body;
+		var physics = this._physics[body._index];
+		if (physics)
+			physics._on_overlap(event);
+		event.physics = physics;
+		for (var i in body._on_overlap_callbacks) {
+			body._on_overlap_callbacks[i](event);
+		}
+	}
 	addBody(body, physics) {
 		body._index = this._bodies.length;
 		this._bodies.push(body);
@@ -111,20 +121,21 @@ export class CollisionEngine {
 			var body2 = this._bodies[collision._body2_idx];
 			body1._overlapping.add(body2._index);
 			body2._overlapping.add(body1._index);
-			if (body1._prev_overlapping.has(body2._index))
-				continue;
-
 			collision.real_interval = dt;
 
 			collision.other = body2;
 			collision.normal = collision._normal1;
 			collision.other_normal = collision._normal2;
-			this._handle_collision(body1, collision);
+			if (!body1._prev_overlapping.has(body2._index))
+				this._handle_collision(body1, collision);
+			this._handle_overlap(body1, collision);
 
 			collision.other = body1;
 			collision.normal = collision._normal2;
 			collision.other_normal = collision._normal1;
-			this._handle_collision(body2, collision);
+			if (!body2._prev_overlapping.has(body1._index))
+				this._handle_collision(body2, collision);
+			this._handle_overlap(body2, collision);
 		}
 		for (var i in this._bodies) {
 			var body = this._bodies[i];
@@ -142,6 +153,7 @@ class CollisionBody {
 		this._type = type;
 		this._params = params;
 		this._on_collision_callbacks = [];
+		this._on_overlap_callbacks = [];
 		this.translate = function() { throw new Error('Translate unsuported in CollisionBody '+type); };
 		this._copy_params = function() { throw new Error('_copy_params not implemented for '+type); };
 		this.travel = function() { throw new Error('travel not implemented for '+type); };
@@ -166,8 +178,8 @@ class CollisionBody {
 			this._copy_params = function(out) {
 				out = out || {};
 				out.radius = this._params.radius;
-				out.p1 = mtx.copy_v2(this._params.p1, out.p1 | mtx.uninit_v2());
-				out.p2 = mtx.copy_v2(this._params.p2, out.p2 | mtx.uninit_v2());
+				out.p1 = mtx.copy_v2(this._params.p1, out.p1 || mtx.uninit_v2());
+				out.p2 = mtx.copy_v2(this._params.p2, out.p2 || mtx.uninit_v2());
 				return out;
 			}
 			this.travel = function(out) {
@@ -193,8 +205,13 @@ class CollisionBody {
 	setParameter(key, value) {
 		this._params[key] = value;
 	}
+	// On collision callbacks are called when a collision occures.
 	onCollision(callback) {
 		this._on_collision_callbacks.push(callback);
+	}
+	// On overlap callbacks are called every update that this object overlaps another, once for each overlap.
+	onOverlap(callback) {
+		this._on_overlap_callbacks.push(callback);
 	}
 }
 
@@ -209,11 +226,13 @@ export class BasicPhysics {
 		mtx.mult_s_add_v2(dt, this.acceleration, this.velocity, this.velocity);
 	}
 	setCollisionBehavior(behavior) {
+		this._on_collision = function(){};
+		this._on_overlap = function(){};
 		if (behavior === 'none') {
-			this._on_collision = function(){};
+			// keep defaults
 		} else if (behavior === 'bounce') {
-			this._on_collision = function(event){
-				// reflect the velocity using the normal
+			this._on_overlap = function(event){
+				// reflect the velocity using the normal if velocity is going against the normal
 				var s = -2*mtx.dot_v2(this.velocity, event.normal);
 				if (s > 0)
 					mtx.mult_s_add_v2(s, event.normal, this.velocity, this.velocity);
@@ -306,12 +325,14 @@ function _test_collision_rline_inf_bound(rline1, rline2, inf_bound) {
 function _test_collision_circle_rline(circle, rline) {
 	// get the vector from the start to the end of rline
 	var p12 = mtx.sub_v2(rline.p2, rline.p1, mtx.uninit_v2());
-	// get the projection of the circle's center along p12
-	var s = mtx.dot_v2(p12, circle.center)/mtx.dot_v2(p12, p12);
+	// and a vector from p1 to the circle's center
+	var p1_to_c = mtx.sub_v2(circle.center, rline.p1, mtx.uninit_v2());
+	// get the projection of that vector to the circle's center along p12
+	var s = mtx.dot_v2(p12, p1_to_c)/mtx.dot_v2(p12, p12);
 	if (0 < s && s < 1) {
 		var proj = mtx.mult_s_v2(s, p12, mtx.uninit_v2());
 		// use that to get the normal from the rline to the circle's center
-		var norm = mtx.add_v2(rline.p1, proj, mts.uninit_v2());
+		var norm = mtx.add_v2(rline.p1, proj, mtx.uninit_v2());
 		mtx.sub_v2(circle.center, norm, norm);
 		var d = mtx.length_v2(norm);
 		if (d <= circle.radius + rline.radius) {
@@ -321,20 +342,21 @@ function _test_collision_circle_rline(circle, rline) {
 				_normal2: mtx.mult_s_v2(-1, norm, mtx.uninit_v2()), // the normal acting against the rline
 				t: 1
 			}
+			return collision;
 		}
 	}
 	var rline_c1 = {
 		radius: rline.radius,
 		center: rline.p1
 	};
-	var collision = _test_collision_circle_circle(rline_c1, circle);
+	var collision = _test_collision_circle_circle(circle, rline_c1);
 	if (collision)
 		return collision;
 	var rline_c2 = {
 		radius: rline.radius,
 		center: rline.p2
 	};
-	return _test_collision_circle_circle(rline_c2, circle);
+	return _test_collision_circle_circle(circle, rline_c2);
 }
 
 export function initCircle(center, radius) {
@@ -345,4 +367,9 @@ export function initCircle(center, radius) {
 export function initInfiniteBoundary(point, normal) {
 	var params = {point: point, normal:mtx.normalize_v2(normal, mtx.uninit_v2())};
 	return new CollisionBody('inf_bound', params);
+}
+
+export function initRoundedLine(point1, point2, radius) {
+	var params = {p1:point1, p2:point2, radius:radius};
+	return new CollisionBody('rline', params);
 }
