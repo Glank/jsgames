@@ -72,7 +72,9 @@ function randomColor() {
     var theta = Math.random()*Math.PI*2;
     var speed = game.width/2;
     var ball = collision.initCircle([x, y], 20);
-    var ballPhysics = new collision.BasicPhysics('bounce');
+    var ballPhysics = new collision.BasicPhysics('bounce', {
+      enforce_no_overlap: function(other) { return other._type === 'rline'; }
+    });
     var color = randomColor();
     if (i === 0) {
       ballPhysics.acceleration = [0, 200];
@@ -101,7 +103,10 @@ function randomColor() {
     [paddleCenter[0]-paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]-paddleLength/2*Math.sin(paddleAngle)],
     7
   );
-  var paddlePhysics = new collision.BasicPhysics('stop');
+  var paddlePhysics = new collision.BasicPhysics('stop', {
+    enforce_no_overlap: function(other) { return other._type === 'inf_bound'; },
+    ignore: function(other) { return other._type === 'circle'; },
+  });
   engine.addBody(paddle, paddlePhysics);
 	game.draw = function(ctx) {
     for (var i = 0; i < balls.length; i++) {

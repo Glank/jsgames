@@ -39,6 +39,12 @@ export function initGame(div, width, height){
   display.width = width;
   display.height = height;
 	display.style["background-color"] = "white";
+  display.style["margin"] = 0;
+  display.style["position"] = "absolute";
+  display.style["top"] = "50%";
+  display.style["left"] = "50%";
+  display.style["-ms-transform"] = "translate(-50%, -50%)";
+  display.style["transform"] = "translate(-50%, -50%)";
   div.appendChild(display);
   var game = {
 		"width": width,
@@ -69,7 +75,7 @@ export function initGame(div, width, height){
 			if(game.print_debug) {
 				ctx.fillStyle = "#0000FF";
 				ctx.font = "10px Courier";
-				ctx.fillText('FR: '+game.avg_framerate.toFixed(0), 2, 10);
+				ctx.fillText('fps: '+game.avg_framerate.toFixed(0), 2, 10);
 				var i = 0;
 				for (const [key, value] of Object.entries(game.debug)) {
           ctx.fillText(''+key+': '+value, 2, 22+i*12);

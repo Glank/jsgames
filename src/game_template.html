@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Style the button */
+button {
+  padding: 20px;
+  font-size: 20px;
+}
+
+div {
+  height: 200px;
+  position: relative;
+}
+</style>
+</head>
+<body>
+
+
+<button id="open_fullscreen">Open Fullscreen</button>
+
+<div id="game">
+</div>
+
+<script type="module">
+import {initGame, tryFullscreen} from "./game_utils.mjs";
+import * as collision from "./collision.mjs";
+import * as mtx from "./mtx.mjs";
+(function() {
+	var div = document.getElementById("game");
+	var game = initGame(div, 480, 480*2);
+  var engine = new collision.CollisionEngine();
+
+	game.draw = function(ctx) {
+	};
+
+  game.update = function(dt) {
+		engine.update();
+  };
+  game.set_frame_interval(Math.trunc(1000/60)); // ~60fps
+
+  var fs_button = document.getElementById("open_fullscreen");
+  fs_button.onclick = function() {
+    tryFullscreen(div);
+  };
+
+  //game.addTouchListener(function(e) {});
+
+  game.print_debug = true;
+})();
+</script>
+</body>
+</html>

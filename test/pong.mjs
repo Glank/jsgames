@@ -1,5 +1,5 @@
 import {assert, approx}  from "../src/test_utils.mjs";
-import {initPong, updatePong, _test} from "../src/pong/pong.mjs";
+import {initPong, updatePong, _test} from "../src/old_pong/pong.mjs";
 import * as mtx from "../src/mtx.mjs";
 
 function testBall() {

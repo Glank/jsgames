@@ -27,6 +27,7 @@ export class CollisionEngine {
 		// dd: dynamic-dynamic test(body1start, body1end, body2start, body2end)
 		this.collision_tests = {
 			"inf_bound:inf_bound": "none",
+			"rline:rline": "none", // TODO
 			"circle:circle": {
 				"call_type": "ss",
 				"test": _test_collision_circle_circle
@@ -46,6 +47,7 @@ export class CollisionEngine {
 		}
 	}
 	_handle_collision(body, event) {
+		event.engine = this;
 		event.body = body;
 		var physics = this._physics[body._index];
 		if (physics)
@@ -56,6 +58,7 @@ export class CollisionEngine {
 		}
 	}
 	_handle_overlap(body, event) {
+		event.engine = this;
 		event.body = body;
 		var physics = this._physics[body._index];
 		if (physics)
@@ -64,6 +67,45 @@ export class CollisionEngine {
 		for (var i in body._on_overlap_callbacks) {
 			body._on_overlap_callbacks[i](event);
 		}
+	}
+	testCollision(body1, body2, forceStatic) {
+		var key = body1._type+':'+body2._type;
+		var swapped = false;
+		if (!(key in this.collision_tests)) {
+			swapped = true;
+			var tmp = body1;
+			body1 = body2;
+			body2 = tmp;
+			key = body1._type+':'+body2._type;
+		}
+		var test = this.collision_tests[key];
+		if (test === 'none')
+			return null;
+		if (!test)
+			throw new Error("No collision test for body interaction "+key);
+		var collision = null;
+		var b1p1 = body1._prev_params;
+		var b1p2 = body1._params;
+		var b2p1 = body2._prev_params;
+		var b2p2 = body2._params;
+		if (forceStatic) {
+			b1p1 = b1p2;
+			b2p1 = b2p2;
+		}
+		if (test.call_type === "ss")
+			collision = test.test(b1p2, b2p2);
+		else if (test.call_type=== "ds")
+			collision = test.test(b1p1, b1p2, b2p2);
+		else if (test.call_type === "dd")
+			collision = test.test(b1p1, b1p2, b2p1, b2p2);
+		else
+			throw new Error("Unknown collision test call_type: "+test.call_type);
+		if (collision && swapped) {
+			var tmp = collision._normal1;
+			collision._normal1 = collision._normal2;
+			collision._normal2 = tmp;
+		}
+		return collision;
 	}
 	addBody(body, physics) {
 		body._index = this._bodies.length;
@@ -81,35 +123,16 @@ export class CollisionEngine {
 		}
 		var collisions = [];
 		var collision_tests = this.collision_tests;
-		function testCollision(body1, body2) {
-			var key = body1._type+':'+body2._type;
-			if (!(key in collision_tests)) {
-				var tmp = body1;
-				body1 = body2;
-				body2 = tmp;
-				key = body1._type+':'+body2._type;
-			}
-			var test = collision_tests[key];
-			if (test === 'none')
-				return;
-			if (!test)
-				throw new Error("No collision test for body interaction "+key);
-			var collision = null;
-			if (test.call_type === "ss")
-				collision = test.test(body1._params, body2._params);
-			else if (test.call_type=== "ds")
-				collision = test.test(body1._prev_params, body1._params, body2._params);
-			else if (test.call_type === "dd")
-				collision = test.test(body1._prev_params, body1._params, body2._prev_params, body2._params);
-			else
-				throw new Error("Unknown collision test call_type: "+test.call_type);
+		var this_engine = this;
+		function testCollisionCallback(body1, body2) {
+			var collision = this_engine.testCollision(body1, body2);
 			if (collision) {
 				collision._body1_idx = body1._index;
 				collision._body2_idx = body2._index;
 				collisions.push(collision);
 			}
 		}
-		this.broad_pass(this._bodies, testCollision);
+		this.broad_pass(this._bodies, testCollisionCallback);
 		collisions.sort(function cmp(a,b) { return a.t-b.t; });
 		for (var i in this._bodies) {
 			this._bodies[i]._prev_overlapping = this._bodies[i]._overlapping || new Set();
@@ -255,16 +278,22 @@ export class BasicPhysics {
 		this._on_collision = function(){};
 		this._on_overlap = function(){};
 		this.behavior = behavior;
+		if (!('enforce_no_overlap' in this._params))
+			this._params.enforce_no_overlap = function() {return false;};
+		if (!('ignore' in this._params))
+			this._params.ignore = function() {return false;};
 		if (behavior === 'none') {
 			// keep defaults
 		} else if (behavior === 'bounce' || behavior === 'stop') {
 			if (!('bounciness' in this._params))
 				this._params.bounciness = 1;
 			if (this._params.bounciness < 0 || this._params.bounciness > 1)
-				throw new Exception("Invalid bounciness: "+this._params.bounciness);
+				throw new Error("Invalid bounciness: "+this._params.bounciness);
 			this._on_overlap = function(event){
+				if (this._params.ignore(event.other))
+					return;
 				// prevent further travel in against the direction of the overlap
-				if (event.normal)
+				if (event.normal && behavior === 'stop')
 					this._blocking_normals.push(mtx.copy_v2(event.normal, mtx.uninit_v2()));
 				// reflect the velocity using the normal if velocity is going against the normal
 				if (this.behavior === 'bounce') {
@@ -282,6 +311,40 @@ export class BasicPhysics {
 					var forwardtravel = mtx.mult_s_v2(
 						(1-event.t)*event.real_interval, this.velocity, mtx.uninit_v2());
 					event.body.translate(forwardtravel);
+				}
+				if (this._params.enforce_no_overlap(event.other)) {
+					// forcefully move this object along the collision normal until it's no longer overlapping
+					var collision = event.engine.testCollision(event.body, event.other, true);
+					if (collision) {
+						var minTranslation = 0;
+						var maxTranslation = 1;
+						var curTranslated = 0;
+						var deltaLength = maxTranslation;
+						var deltaVector = mtx.uninit_v2();
+						var iters = 0;
+						var phase = 'expand';
+						while ((maxTranslation-minTranslation) > 0.1 && iters < 10) {
+							mtx.mult_s_v2(deltaLength-curTranslated, event.normal, deltaVector);
+							event.body.translate(deltaVector);
+							curTranslated = deltaLength;
+							collision = event.engine.testCollision(event.body, event.other, true);
+							if (collision) {
+								if (phase === 'expand') {
+									minTranslation = maxTranslation;
+									maxTranslation *= 2;
+									deltaLength = maxTranslation;
+								} else {
+									minTranslation = deltaLength;
+									deltaLength = 0.5*(maxTranslation+minTranslation);
+								}
+							} else {
+								phase = 'narrow';
+								maxTranslation = deltaLength;
+								deltaLength = 0.5*(maxTranslation+minTranslation);
+							}
+							iters++;
+						}
+					}
 				}
 			};
 		} else {
