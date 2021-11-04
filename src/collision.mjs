@@ -69,14 +69,14 @@ export class CollisionEngine {
 		}
 	}
 	testCollision(body1, body2, forceStatic) {
-		var key = body1._type+':'+body2._type;
+		var key = body1.type+':'+body2.type;
 		var swapped = false;
 		if (!(key in this.collision_tests)) {
 			swapped = true;
 			var tmp = body1;
 			body1 = body2;
 			body2 = tmp;
-			key = body1._type+':'+body2._type;
+			key = body1.type+':'+body2.type;
 		}
 		var test = this.collision_tests[key];
 		if (test === 'none')
@@ -147,12 +147,12 @@ export class CollisionEngine {
 			if (collision._normal1) {
 				var l = mtx.length_v2(collision._normal1);
 				if (l < 0.999  || l > 1.001 )
-					throw new Error("Invalid _normal1 from "+body1._type+":"+body2._type+" of length "+l);
+					throw new Error("Invalid _normal1 from "+body1.type+":"+body2.type+" of length "+l);
 			}	
 			if (collision._normal2) {
 				var l = mtx.length_v2(collision._normal2);
 				if (l < 0.999  || l > 1.001)
-					throw new Error("Invalid _normal2 from "+body1._type+":"+body2._type)+" of length "+l;
+					throw new Error("Invalid _normal2 from "+body1.type+":"+body2.type)+" of length "+l;
 			}	
 			body1._overlapping.add(body2._index);
 			body2._overlapping.add(body1._index);
@@ -185,14 +185,14 @@ export class CollisionEngine {
 //	- 'inf_bound' with parameters [normal, point]
 class CollisionBody {
 	constructor(type, params) {
-		this._type = type;
+		this.type = type;
 		this._params = params;
 		this._on_collision_callbacks = [];
 		this._on_overlap_callbacks = [];
 		this.translate = function() { throw new Error('Translate unsuported in CollisionBody '+type); };
 		this._copy_params = function() { throw new Error('_copy_params not implemented for '+type); };
 		this.travel = function() { throw new Error('travel not implemented for '+type); };
-		if (this._type === 'circle') {
+		if (this.type === 'circle') {
 			this.translate = function(delta) {
 				mtx.add_v2(delta, this._params.center, this._params.center);
 			};
@@ -205,7 +205,7 @@ class CollisionBody {
 			this.travel = function(out) {
 				return mtx.sub_v2(this._params.center, this._prev_params.center, out || mtx.uninit_v2());
 			};
-		} else if (this._type === 'rline') {
+		} else if (this.type === 'rline') {
 			this.translate = function(delta) {
 				mtx.add_v2(delta, this._params.p1, this._params.p1);
 				mtx.add_v2(delta, this._params.p2, this._params.p2);
@@ -224,7 +224,7 @@ class CollisionBody {
 				mtx.average_v2(this._params.p1, this._params.p2, center_end);
 				return mtx.sub_v2(center_end, center_start, out || mtx.uninit_v2());
 			}
-		} else if (this._type === 'inf_bound') {
+		} else if (this.type === 'inf_bound') {
 			this._copy_params = function() {
 				return {
 					point:mtx.copy_v2(this._params.point, mtx.uninit_v2()),
@@ -237,9 +237,12 @@ class CollisionBody {
 		// the parameters before any given physics update
 		this._prev_params = this._copy_params();
 	}
-	setParameter(key, value) {
-		this._params[key] = value;
-	}
+  get(key) {
+    return this._params[key];
+  }
+  set(key, value) {
+    this._params[key] = value;
+  }
 	// On collision callbacks are called when a collision occures.
 	onCollision(callback) {
 		this._on_collision_callbacks.push(callback);

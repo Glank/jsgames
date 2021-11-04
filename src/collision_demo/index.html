@@ -73,7 +73,7 @@ function randomColor() {
     var speed = game.width/2;
     var ball = collision.initCircle([x, y], 20);
     var ballPhysics = new collision.BasicPhysics('bounce', {
-      enforce_no_overlap: function(other) { return other._type === 'rline'; }
+      enforce_no_overlap: function(other) { return other.type === 'rline'; }
     });
     var color = randomColor();
     if (i === 0) {
@@ -104,25 +104,25 @@ function randomColor() {
     7
   );
   var paddlePhysics = new collision.BasicPhysics('stop', {
-    enforce_no_overlap: function(other) { return other._type === 'inf_bound'; },
-    ignore: function(other) { return other._type === 'circle'; },
+    enforce_no_overlap: function(other) { return other.type === 'inf_bound'; },
+    ignore: function(other) { return other.type === 'circle'; },
   });
   engine.addBody(paddle, paddlePhysics);
 	game.draw = function(ctx) {
     for (var i = 0; i < balls.length; i++) {
       var ball = balls[i];
       ctx.beginPath();
-      ctx.arc(ball._params.center[0], ball._params.center[1], ball._params.radius, 0, 2*Math.PI);
+      ctx.arc(ball.get('center')[0], ball.get('center')[1], ball.get('radius'), 0, 2*Math.PI);
       ctx.closePath();
       ctx.fillStyle = colors[i];
       ctx.fill();
     }
 
-    ctx.lineWidth = paddle._params.radius*2;
+    ctx.lineWidth = paddle.get('radius')*2;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(paddle._params.p1[0], paddle._params.p1[1]);
-    ctx.lineTo(paddle._params.p2[0], paddle._params.p2[1]);
+    ctx.moveTo(paddle.get('p1')[0], paddle.get('p1')[1]);
+    ctx.lineTo(paddle.get('p2')[0], paddle.get('p2')[1]);
     ctx.strokeStyle = "black";
 		ctx.stroke();
 	};
@@ -131,10 +131,10 @@ function randomColor() {
     t += dt;
     paddlePhysics.velocity[0] += 100*Math.sin(t*2*Math.PI/5);
     paddleAngle = Math.PI/4*Math.sin(t*2*Math.PI/4);
-    paddleCenter = mtx.average_v2(paddle._params.p1, paddle._params.p2, mtx.uninit_v2());
-    paddle.setParameter('p1',
+    paddleCenter = mtx.average_v2(paddle.get('p1'), paddle.get('p2'), mtx.uninit_v2());
+    paddle.set('p1',
       [paddleCenter[0]+paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]+paddleLength/2*Math.sin(paddleAngle)]);
-    paddle.setParameter('p2',
+    paddle.set('p2',
       [paddleCenter[0]-paddleLength/2*Math.cos(paddleAngle), paddleCenter[1]-paddleLength/2*Math.sin(paddleAngle)]);
     game.debug.paddle = ""+paddleCenter[0].toFixed(2)+", "+paddleCenter[1].toFixed(2)+", "+paddleAngle;
     engine.update(dt);

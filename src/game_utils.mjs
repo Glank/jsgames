@@ -78,8 +78,15 @@ export function initGame(div, width, height){
 				ctx.fillText('fps: '+game.avg_framerate.toFixed(0), 2, 10);
 				var i = 0;
 				for (const [key, value] of Object.entries(game.debug)) {
-          ctx.fillText(''+key+': '+value, 2, 22+i*12);
-					i++;
+          var lines = (''+value).split('\n');
+          var key_str = ''+key+': ';
+          var key_box = ctx.measureText(key_str);
+          var val_x = key_box.width+4;
+          ctx.fillText(key_str, 2, 22+i*12);
+          for (var l in lines) {
+            ctx.fillText(lines[l], val_x, 22+i*12);
+            i++;
+          }
 				}
 			}
 			ctx.restore();
@@ -137,8 +144,14 @@ export function initGame(div, width, height){
 				game._last_updated = performance.now();
 			}
 		}
-		if (game.update && (!game.paused))
-			game.update(Math.min(dt, game.max_dt));
+		if (game.update && (!game.paused)) {
+      try {
+        game.update(Math.min(dt, game.max_dt));
+      } catch(err) {
+        game.debug.error_message = err.message;
+        game.debug.error_stack = err.stack;
+      }
+    }
 		game.avg_framerate = (game.avg_framerate*15+(1/dt))/16;
 		window.requestAnimationFrame(game.redraw);
   };
