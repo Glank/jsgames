@@ -105,6 +105,10 @@ export class CollisionEngine {
 			collision._normal1 = collision._normal2;
 			collision._normal2 = tmp;
 		}
+    if (collision && isNaN(collision.t)) {
+      console.log(collision);
+      throw new Error('Invalid collision time ('+collision.t+') from '+key);
+    }
 		return collision;
 	}
 	addBody(body, physics) {
@@ -207,6 +211,8 @@ class CollisionBody {
 			};
 		} else if (this.type === 'rline') {
 			this.translate = function(delta) {
+        if (isNaN(delta[0]) || isNaN(delta[1]))
+          throw new Error('Invalid translate: '+delta);
 				mtx.add_v2(delta, this._params.p1, this._params.p1);
 				mtx.add_v2(delta, this._params.p2, this._params.p2);
 			};
@@ -222,7 +228,10 @@ class CollisionBody {
 				mtx.average_v2(this._prev_params.p1, this._prev_params.p2, center_start);
 				var center_end = mtx.uninit_v2();
 				mtx.average_v2(this._params.p1, this._params.p2, center_end);
-				return mtx.sub_v2(center_end, center_start, out || mtx.uninit_v2());
+				var ret = mtx.sub_v2(center_end, center_start, out || mtx.uninit_v2());
+        if (isNaN(ret[0]) || isNaN(ret[1]))
+          throw new Error('Invalid travel.');
+        return ret;
 			}
 		} else if (this.type === 'inf_bound') {
 			this._copy_params = function() {
@@ -380,7 +389,11 @@ function _test_collision_circle_inf_bound(circle1, circle2, inf_bound) {
 	// calculate exact t
 	var c1c_to_c2c = mtx.uninit_v2();
 	mtx.sub_v2(circle2.center, circle1.center, c1c_to_c2c);
-	collision.t = 1 - ((circle2.radius-d)/mtx.length_v2(c1c_to_c2c));
+  var travel = mtx.length_v2(c1c_to_c2c);
+  if(travel === 0)
+    collision.t = 1;
+  else
+    collision.t = 1 - ((circle2.radius-d)/travel);
 	if (collision.t > 1) collision.t = 1;
 	if (collision.t < 0) collision.t = 0;
 	return collision;

@@ -150,6 +150,8 @@ export function initGame(div, width, height){
       } catch(err) {
         game.debug.error_message = err.message;
         game.debug.error_stack = err.stack;
+        console.log(err.message);
+        console.log(err.stack);
       }
     }
 		game.avg_framerate = (game.avg_framerate*15+(1/dt))/16;
