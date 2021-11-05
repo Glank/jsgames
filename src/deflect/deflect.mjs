@@ -1,11 +1,11 @@
-import {initGame, tryFullscreen, isFullscreen} from "../game_utils.mjs";
-import {isMobileBrowser} from "../mobile_check.js";
+import * as gu from "../game_utils.mjs";
+import * as mbl from "../mobile_check.js";
 import * as collision from "../collision.mjs";
 import * as mtx from "../mtx.mjs";
 
 (function() {
 	var div = document.getElementById("game");
-	var game = initGame(div, 480, 480*2);
+	var game = gu.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
 	
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
@@ -16,13 +16,11 @@ import * as mtx from "../mtx.mjs";
   });
 	var gameState = 'countdown';
 	var countDownTime = 3;
+	var heldVelocity = null;
   var resetBall = function() {
 		gameState = 'countdown';
 		countDownTime = 3;
     ball.set('center', mtx.copy_v2(ballInitPoint, mtx.uninit_v2()));
-    mtx.set_v2(0, 0, ballPhysics.velocity);
-  };
-	var releaseBall = function() {
 		var spread = 0.125*Math.PI; // max radians the ball's velocity can diverge from vertical
     var angle = (Math.random()*2-1)*spread;
 		if (Math.random() < 0.5) {
@@ -32,7 +30,23 @@ import * as mtx from "../mtx.mjs";
 			// towards the AI
 			angle += 1.5*Math.PI;
 		}
-    mtx.set_v2(ballInitSpeed*Math.cos(angle), ballInitSpeed*Math.sin(angle), ballPhysics.velocity);
+		heldVelocity = mtx.uninit_v2();
+    mtx.set_v2(ballInitSpeed*Math.cos(angle), ballInitSpeed*Math.sin(angle), heldVelocity);
+    mtx.set_v2(0, 0, ballPhysics.velocity);
+  };
+	var releaseBall = function() {
+		mtx.copy_v2(heldVelocity, ballPhysics.velocity);
+		heldVelocity = null;
+	};
+	var pause = function() {
+		game.paused = true; 
+		if (heldVelocity === null) {
+			heldVelocity = mtx.uninit_v2();
+			mtx.copy_v2(ballPhysics.velocity, heldVelocity);
+			mtx.set_v2(0, 0, ballPhysics.velocity);
+		}
+		countDownTime = 3;
+		gameState = 'countdown';
 	};
   resetBall();
   engine.addBody(ball, ballPhysics);
@@ -140,7 +154,10 @@ import * as mtx from "../mtx.mjs";
       ctx.fillStyle = "#000000";
       ctx.font = "bold 40px arial";
 			if (game.paused) {
-				txt = "Fullscreen to Unpause";
+				if (mbl.isMobileBrowser())
+					txt = "Tap to Unpause";
+				else
+					txt = "Click to Unpause";
 			} else if (gameState === 'countdown') {
 				txt = ''+Math.ceil(countDownTime);
 				ctx.font = "bold 120px arial";
@@ -179,8 +196,8 @@ import * as mtx from "../mtx.mjs";
 	var aiXDir = 0;
   var timeSinceBallSpeedUp = 0;
   game.update = function(dt) {
-    if (!isFullscreen()) {
-      game.paused = true; 
+    if (!gu.isFullscreen()) {
+			pause();
       return;
     }
 
@@ -198,7 +215,7 @@ import * as mtx from "../mtx.mjs";
 			}
 		}
 
-    if (isMobileBrowser()) {
+    if (mbl.isMobileBrowser()) {
       var center = getCenter(playerPaddle); 
       if (game.touchesDown.length === 0) {
         playerXDir = 0;
@@ -259,9 +276,8 @@ import * as mtx from "../mtx.mjs";
 
   game.set_frame_interval(Math.trunc(1000/60)); // ~60fps
 
-  var fs_button = document.getElementById("open_fullscreen");
-  fs_button.onclick = function() {
-    tryFullscreen(div);
+  game.display.onclick = function() {
+    gu.tryFullscreen(div);
     setTimeout(function() {
       game.paused = false;
     }, 500);
