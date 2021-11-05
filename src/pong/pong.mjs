@@ -7,20 +7,33 @@ import * as mtx from "../mtx.mjs";
 	var div = document.getElementById("game");
 	var game = initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
-
+	
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
+	var ballInitSpeed = 500;
   var ball = collision.initCircle(mtx.copy_v2(ballInitPoint, mtx.uninit_v2()), 20);
   var ballPhysics = new collision.BasicPhysics("bounce", {
     enforce_no_overlap: function(other) { return other.type === 'rline'; }
   });
+	var gameState = 'countdown';
+	var countDownTime = 3;
   var resetBall = function() {
-    var speed = 500;
-    // start the ball going towards the AI
-    var angle = Math.PI*(1.25+Math.random()*0.5);
-    mtx.set_v2(speed*Math.cos(angle), speed*Math.sin(angle), ballPhysics.velocity);
+		gameState = 'countdown';
+		countDownTime = 3;
     ball.set('center', mtx.copy_v2(ballInitPoint, mtx.uninit_v2()));
-    game.debug.ballReset = Math.random();
+    mtx.set_v2(0, 0, ballPhysics.velocity);
   };
+	var releaseBall = function() {
+		var spread = 0.125*Math.PI; // max radians the ball's velocity can diverge from vertical
+    var angle = (Math.random()*2-1)*spread;
+		if (Math.random() < 0.5) {
+			// towards the player
+			angle += 0.5*Math.PI;
+		} else {
+			// towards the AI
+			angle += 1.5*Math.PI;
+		}
+    mtx.set_v2(ballInitSpeed*Math.cos(angle), ballInitSpeed*Math.sin(angle), ballPhysics.velocity);
+	};
   resetBall();
   engine.addBody(ball, ballPhysics);
 
@@ -41,7 +54,6 @@ import * as mtx from "../mtx.mjs";
       var angle = Math.atan2(ballPhysics.velocity[1], ballPhysics.velocity[0]);
       mtx.set_v2(ballSpeed*Math.cos(angle), ballSpeed*Math.sin(angle), ballPhysics.velocity);
     }
-    game.debug.unbrokenWallHits = unbrokenWallHits;
   });
 
   var bounding_walls = [
@@ -60,12 +72,10 @@ import * as mtx from "../mtx.mjs";
   }
   // top
   bounding_wall_bodies[1].onCollision(function(event){
-    game.debug.reached = "top";
     resetBall();
   });
   // bottom
   bounding_wall_bodies[3].onCollision(function(event){
-    game.debug.reached = "bottom";
     resetBall();
   });
 
@@ -122,17 +132,27 @@ import * as mtx from "../mtx.mjs";
       ctx.fill();
     }
 
-    if (game.paused) {
+    if (game.paused || gameState === 'countdown') {
+			// tint screen
       ctx.fillStyle = "#00000030";
       ctx.fillRect(0,0,game.width,game.height);
+			var txt = '';
       ctx.fillStyle = "#000000";
-      ctx.font = "bold 30px arial";
-      var txt = "Fullscreen to Unpause";
+      ctx.font = "bold 40px arial";
+			if (game.paused) {
+				txt = "Fullscreen to Unpause";
+			} else if (gameState === 'countdown') {
+				txt = ''+Math.ceil(countDownTime);
+				ctx.font = "bold 120px arial";
+			} else {
+				throw new Error('invalid draw state');
+			}
       var txt_box = ctx.measureText(txt);
+			var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent);
       var txt_x = (game.width-txt_box.width)/2;
-      var txt_y = (game.height-(txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent))/2;
+      var txt_y = (game.height-box_height)/2+txt_box.fontBoundingBoxAscent;
       ctx.fillText(txt, txt_x, txt_y);
-    }
+		}
 	};
 
 	var getAngle = function(paddle) {
@@ -156,18 +176,27 @@ import * as mtx from "../mtx.mjs";
 
   var playerXDir = 0;
   var playerAngleDir = 0;
-  var t = 0;
+	var aiXDir = 0;
+  var timeSinceBallSpeedUp = 0;
   game.update = function(dt) {
     if (!isFullscreen()) {
       game.paused = true; 
       return;
     }
 
-    t += dt;
-    if (t > 10) {
-      mtx.mult_s_v2(1.25, ballPhysics.velocity, ballPhysics.velocity);
-      t = 0;
-    }
+		if (gameState === 'countdown') {
+			countDownTime -= dt;
+			if (countDownTime < 0) {
+				gameState = 'play';
+				releaseBall();
+			}
+		} else if(gameState === 'play') {
+			timeSinceBallSpeedUp += dt;
+			if (timeSinceBallSpeedUp > 10) {
+				mtx.mult_s_v2(1.25, ballPhysics.velocity, ballPhysics.velocity);
+				timeSinceBallSpeedUp = 0;
+			}
+		}
 
     if (isMobileBrowser()) {
       var center = getCenter(playerPaddle); 
@@ -211,6 +240,16 @@ import * as mtx from "../mtx.mjs";
     playerPaddlePhysics.velocity[0] = playerXDir*paddleSpeed;
     var paddleAngle = playerAngleDir*dt*paddleAngularSpeed+getAngle(playerPaddle);
     setAngle(playerPaddle, paddleAngle);
+
+		// update AI
+		var aiCenter = getCenter(aiPaddle);
+		if (aiCenter[0] < ball.get('center')[0]-10)
+			aiXDir = 1;
+		else if (aiCenter[0] > ball.get('center')[0]+10)
+			aiXDir = -1;
+		else
+			aiXDir = 0;
+    aiPaddlePhysics.velocity[0] = aiXDir*paddleSpeed/5;
 
     engine.update(dt);
     if (isNaN(playerPaddle.get('p1')[0]) || playerPaddle.get('p1')[0] < 0 || playerPaddle.get('p1')[0] > game.width) {
