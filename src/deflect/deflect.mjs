@@ -40,6 +40,7 @@ import * as mtx from "../mtx.mjs";
 	};
 	var pause = function() {
 		game.paused = true; 
+    game.menu = pausedMenu;
 		if (heldVelocity === null) {
 			heldVelocity = mtx.uninit_v2();
 			mtx.copy_v2(ballPhysics.velocity, heldVelocity);
@@ -117,6 +118,19 @@ import * as mtx from "../mtx.mjs";
   engine.addBody(playerPaddle, playerPaddlePhysics);
   engine.addBody(aiPaddle, aiPaddlePhysics);
 
+  var startMenu = new gu.Menu('Deflect', game);
+  startMenu.subtitle = "ErnestMakes.com";
+	startMenu.add(new gu.MenuItem('One Player', function() {
+    game.menu = null;
+    game.paused = false;
+  }));
+  var pausedMenu = new gu.Menu('Paused', game);
+	pausedMenu.add(new gu.MenuItem('Unpause', function() {
+    game.menu = null;
+    game.paused = false;
+  }));
+  game.menu = startMenu;
+
 	game.draw = function(ctx) {
     ctx.beginPath();
 		ctx.arc(ball.get('center')[0], ball.get('center')[1], ball.get('radius'), 0, 2*Math.PI);
@@ -147,29 +161,14 @@ import * as mtx from "../mtx.mjs";
       ctx.fill();
     }
 
-    if (game.paused || gameState === 'countdown') {
+    if (gameState === 'countdown') {
 			// tint screen
       ctx.fillStyle = "#00000030";
       ctx.fillRect(0,0,game.width,game.height);
-			var txt = '';
       ctx.fillStyle = "#000000";
-      ctx.font = "bold 40px arial";
-			if (game.paused) {
-				if (mbl.isMobileBrowser())
-					txt = "Tap to Unpause";
-				else
-					txt = "Click to Unpause";
-			} else if (gameState === 'countdown') {
-				txt = ''+Math.ceil(countDownTime);
-				ctx.font = "bold 120px arial";
-			} else {
-				throw new Error('invalid draw state');
-			}
-      var txt_box = ctx.measureText(txt);
-			var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent);
-      var txt_x = (game.width-txt_box.width)/2;
-      var txt_y = (game.height-box_height)/2+txt_box.fontBoundingBoxAscent;
-      ctx.fillText(txt, txt_x, txt_y);
+      var txt = ''+Math.ceil(countDownTime);
+      ctx.font = "bold 120px arial";
+      gu.fillTextCentered(ctx, txt, game.width/2, game.height/2);
 		}
 	};
 
@@ -276,13 +275,6 @@ import * as mtx from "../mtx.mjs";
   };
 
   game.set_frame_interval(Math.trunc(1000/60)); // ~60fps
-
-  game.display.onclick = function() {
-    gu.tryFullscreen(div);
-    setTimeout(function() {
-      game.paused = false;
-    }, 500);
-  };
 
   game.addTouchListener(function(e) {});
 

@@ -107,6 +107,36 @@ class Game {
 			touchHandler(e, 'cancel');
 		});
 
+		this.menu = null;
+		this.clickListeners = [];
+		var clickHandler = function(e) {
+			try {
+				var rect = game.display.getBoundingClientRect();
+				var touchesDown = [];
+				var x,y;
+				if (game.rotated) {
+					y = game.height-(eclientX - rect.left)/rect.width*game.display.width;
+					x = (e.clientY - rect.top)/rect.height*game.display.height;
+				} else {
+					x = (e.clientX - rect.left)/rect.width*game.display.width;
+					y = (e.clientY - rect.top)/rect.height*game.display.height;
+				}
+				var event = {'x': x, 'y': y};
+				if (game.menu)
+					game.menu._on_click(event);
+				for (var i in game.clickListeners)
+					game.clickListeners[i](event);
+			} catch (err) {
+				game.debug.error_message = err.message;
+				game.debug.error_stack = err.stack;
+				console.log(err.message);
+				console.log(err.stack);
+			}
+		};
+		display.onclick = function(e) {
+			clickHandler(e);
+		};
+
 		this.set_frame_interval(50);
 
 		// functions to be given
@@ -118,13 +148,17 @@ class Game {
 		ctx.clearRect(0, 0, this.display.width, this.display.height);
     //ctx.fillStyle = "#FFFFFF";
     //ctx.fillRect(0,0, this.display.width, this.display.height);
-    if(this.draw) {
+    if(this.draw || this.menu) {
 			ctx.save()
 			if(this.rotated) {
 				ctx.translate(this.display.width, 0);
 				ctx.rotate(Math.PI/2);
 			}
-      this.draw(ctx);
+			if(this.menu) {
+				this.menu._draw(ctx);
+			} else if (this.draw) {
+				this.draw(ctx);
+			}
 			if(this.print_debug) {
 				ctx.fillStyle = "#0000FF";
 				ctx.font = "10px Courier";
@@ -200,7 +234,7 @@ class Game {
 		var game = this;
 		window.requestAnimationFrame(function() {game.redraw()});
 		this.avg_framerate = (this.avg_framerate*15+(1/dt))/16;
-		if (this.update && (!this.paused)) {
+		if (this.update && (!this.paused) && (!this.menu)) {
       try {
         this.update(Math.min(dt, this.max_dt));
       } catch(err) {
@@ -220,6 +254,9 @@ class Game {
 	addTouchListener(callback) {
 		this.touchCallbacks.push(callback);
 	}
+	addClickListener(callback) {
+		this.clickListeners.push(callback);
+	}
 }
 
 export function initGame(div, width, height){
@@ -234,15 +271,26 @@ export class MenuItem {
 	}
 }
 
+export function fillTextCentered(ctx, txt, x, y) {
+	var txt_box = ctx.measureText(txt);
+	var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent);
+	var txt_x = x-0.5*txt_box.width
+	var txt_y = y-0.5*box_height+txt_box.fontBoundingBoxAscent;
+	ctx.fillText(txt, txt_x, txt_y);
+}
+
 export class Menu extends MenuItem {
-	constructor(title_text, parent) {
+	constructor(title_text, game, parent) {
+		super(title_text, null);
 		var this_ = this;
-		this.parent = parent;
-		super(title_text, function() {
+		this.callback = function() {
 			if (parent)
 				parent._submenu_shown = this_;
-		});
+		};
+		this.parent = parent;
+		this.game = game;
 		this.type = 'menu';
+		this.subtitle = null;
 		this._children = [];
 		if (this.parent) {
 			this._children.push(new MenuItem('< Back', function() {
@@ -254,12 +302,36 @@ export class Menu extends MenuItem {
 	add(item) {
 		if (!(item instanceof MenuItem))
 			throw new Error("Trying to add item that isn't a MenuItem");
-		this._children.append(item);
+		if (this._children.length >= 5)
+			throw new Error("Trying to add too many children to Menu.");
+		this._children.push(item);
 	}
 	_draw(ctx) {
-		// TODO
+		ctx.fillStyle = "#000000";
+		ctx.font = "bold 100px arial";
+		var x = 0.5*this.game.width;
+		var y_div = this.game.height/8;
+		fillTextCentered(ctx, this.text, x, 1.5*y_div);
+		if (this.subtitle) {
+			ctx.font = "30px arial";
+			fillTextCentered(ctx, this.subtitle, x, 2*y_div);
+		}
+		ctx.font = "bold 40px arial";
+		for (var i = 0; i < this._children.length; i++) {
+			fillTextCentered(ctx, this._children[i].text, x, (3+i)*y_div);
+		}
 	}
 	_on_click(event) {
-		// TODO
+		if (!isFullscreen()) {
+			tryFullscreen(this.game.div);
+			return;
+		}
+		var y_div = this.game.height/8;
+		var div = event.y/y_div;
+		var button = Math.floor(div-2.5);
+		if (button >= 0 && button < this._children.length) {
+			this._children[button].callback();
+		}
 	}
 }
+
