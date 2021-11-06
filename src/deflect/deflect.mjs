@@ -138,9 +138,10 @@ import * as mtx from "../mtx.mjs";
 
     // touches down
     for (var i = 0; i < game.touchesDown.length; i++) {
+      const radius = 100;
       var touch = game.touchesDown[i];
       ctx.beginPath();
-      ctx.arc(touch.x, touch.y, 100, 0, 2*Math.PI);
+      ctx.arc(touch.x, touch.y, radius, 0, 2*Math.PI);
       ctx.closePath();
       ctx.fillStyle = "#FF000080";
       ctx.fill();
