@@ -192,14 +192,12 @@ function sound(src) {
   this_.sound = new Howl({
     src: [src]
   });
-  /*
-  this_.sound = document.createElement("audio");
-  this_.sound.src = src;
-  this_.sound.setAttribute("preload", "auto");
-  this_.sound.setAttribute("controls", "none");
-  this_.sound.style.display = "none";
-  document.body.appendChild(this_.sound);
-  */
+  //this_.sound = document.createElement("audio");
+  //this_.sound.src = src;
+  //this_.sound.setAttribute("preload", "auto");
+  //this_.sound.setAttribute("controls", "none");
+  //this_.sound.style.display = "none";
+  //document.body.appendChild(this_.sound);
   this_.play = function(){
     //this_.sound.currentTime = 0;
     this_.sound.play();
@@ -212,12 +210,75 @@ function sound(src) {
 	var game = gu.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
 
-  game.sounds = {};
-  game.sounds.bounce1 = sound('../sound/bounce1.mp3');
-  game.sounds.bounce2 = sound('../sound/bounce2.mp3');
-  game.sounds.success = sound('../sound/success.mp3');
-  game.sounds.beep1 = sound('../sound/beep1.mp3');
-  game.sounds.beep2 = sound('../sound/beep2.mp3');
+	try {
+		//sound('../sound/bounce1.mp3').play();
+		const AudioContext = window.AudioContext || window.webkitAudioContext;
+		const audioCtx = new AudioContext();
+		const oscillator1 = audioCtx.createOscillator();
+		const oscillator2 = audioCtx.createOscillator();
+		const gainNode = audioCtx.createGain();
+		oscillator1.detune.value = 100; // value in cents
+		oscillator1.frequency.value = 440;
+		oscillator1.start(0);
+		oscillator2.detune.value = 100; // value in cents
+		oscillator2.frequency.value = 880;
+		oscillator2.start(0);
+		gainNode.gain.value = 0.02;
+		function playFrequency(f, type, time) {
+			if (Math.random() < 0.5) {
+				try {
+					oscillator2.disconnect(gainNode);
+				} catch(e){}
+				oscillator1.connect(gainNode);
+			} else {
+				try {
+					oscillator1.disconnect(gainNode);
+				} catch(e){}
+				oscillator2.connect(gainNode);
+			}
+			gainNode.gain.value = 0.02;
+			//oscillator.frequency.setValueAtTime(f, audioCtx.currentTime);
+			//oscillator.type = type;
+			gainNode.connect(audioCtx.destination);
+			audioCtx.resume();
+			setTimeout(function() {
+				try {
+					gainNode.gain.value = 0;
+					gainNode.disconnect(audioCtx.destination);
+					audioCtx.suspend();
+				} catch (e){}
+			}, time*1000);
+		}
+		var audioParams = {
+			'bounce1': [220, 'square', 0.1],
+			'bounce2': [220, 'sawtooth', 0.1],
+			'success': [659.25, 'triangle', 0.5],
+			'beep1': [440, 'sine', 0.1],
+			'beep2': [880, 'sine', 0.5]
+		};
+		function makePlayFunction(key) {
+			var play = function() {
+				playFrequency(audioParams[key][0], audioParams[key][1], audioParams[key][2]);
+				game.debug.audio = key;
+			}
+			return play;
+		}
+
+		game.sounds = {};
+		for (var key in audioParams) {
+			game.sounds[key] = {
+				play: makePlayFunction(key)
+			};
+		}
+	} catch (e) {
+		game.debug.error_message = e.message;
+		game.debug.error_stack = e.stack;
+	}
+  //game.sounds.bounce1 = sound('../sound/bounce1.mp3');
+  //game.sounds.bounce2 = sound('../sound/bounce2.mp3');
+  //game.sounds.success = sound('../sound/success.mp3');
+  //game.sounds.beep1 = sound('../sound/beep1.mp3');
+  //game.sounds.beep2 = sound('../sound/beep2.mp3');
 	
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
 	var ballInitSpeed = 500;
@@ -232,7 +293,7 @@ function sound(src) {
 	var heldVelocity = null;
   var resetBall = function() {
 		gameState = 'countdown';
-		countDownTime = 3;
+		countDownTime = 4;
 		var spread = 0.125*Math.PI; // max radians the ball's velocity can diverge from vertical
     var angle = (Math.random()*2-1)*spread;
 		if (Math.random() < 0.5) {
@@ -264,12 +325,6 @@ function sound(src) {
 	};
   resetBall();
   engine.addBody(ball, ballPhysics);
-  ball.onCollision(function(e) {
-    if(e.other.type === 'rline')
-      game.sounds.bounce1.play();
-    else
-      game.sounds.bounce2.play();
-  });
 
   // increse the ball's vertical velocity if it's stuck bouncing between the walls
   var unbrokenWallHits = 0;
@@ -315,6 +370,13 @@ function sound(src) {
     resetBall();
     game.sounds.success.play();
 		topScore++;
+  });
+
+  ball.onCollision(function(e) {
+    if(e.other.type === 'rline')
+      game.sounds.bounce1.play();
+    else if(e.other === bounding_wall_bodies[0] || e.other === bounding_wall_bodies[2])
+      game.sounds.bounce2.play();
   });
 
 	var bottomPaddle = initPaddle(game, engine, 'bottom', 'human');
@@ -391,7 +453,10 @@ function sound(src) {
       ctx.fillStyle = "#00000030";
       ctx.fillRect(0,0,game.width,game.height);
       ctx.fillStyle = "#000000";
-      var txt = ''+Math.ceil(countDownTime);
+      var txt = '';
+			var count = Math.ceil(countDownTime);
+			if (count <= 3)
+				txt = ''+count;
       ctx.font = "bold 120px arial";
 			if (mbl.isMobileBrowser()) {
 				ctx.save();
@@ -416,11 +481,12 @@ function sound(src) {
 		if (gameState === 'countdown') {
       var old = Math.trunc(countDownTime);
 			countDownTime -= dt;
+			var cur = Math.trunc(countDownTime);
 			if (countDownTime < 0) {
         game.sounds.beep2.play();
 				gameState = 'play';
 				releaseBall();
-			} else if (Math.trunc(countDownTime) < old) {
+			} else if (cur < old && cur < 3) {
         game.sounds.beep1.play();
       }
 		} else if(gameState === 'play') {

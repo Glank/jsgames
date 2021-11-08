@@ -1,4 +1,4 @@
-import {isMobileBrowser} from "./mobile_check.js";
+import {isMobileBrowser} from "./mobile_check.mjs";
 
 export function closeFullscreen() {
   // https://www.w3schools.com/howto/howto_js_fullscreen.asp
