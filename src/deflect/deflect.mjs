@@ -1,5 +1,5 @@
 import * as gu from "../game_utils.mjs";
-import * as mbl from "../mobile_check.js";
+import * as mbl from "../mobile_check.mjs";
 import * as collision from "../collision.mjs";
 import * as mtx from "../mtx.mjs";
 
@@ -187,10 +187,37 @@ function initPaddle(game, engine, side, initControl) {
 	return paddle;
 }
 
+function sound(src) {
+  var this_ = {};
+  this_.sound = new Howl({
+    src: [src]
+  });
+  /*
+  this_.sound = document.createElement("audio");
+  this_.sound.src = src;
+  this_.sound.setAttribute("preload", "auto");
+  this_.sound.setAttribute("controls", "none");
+  this_.sound.style.display = "none";
+  document.body.appendChild(this_.sound);
+  */
+  this_.play = function(){
+    //this_.sound.currentTime = 0;
+    this_.sound.play();
+  }
+  return this_;
+}
+
 (function() {
 	var div = document.getElementById("game");
 	var game = gu.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
+
+  game.sounds = {};
+  game.sounds.bounce1 = sound('../sound/bounce1.mp3');
+  game.sounds.bounce2 = sound('../sound/bounce2.mp3');
+  game.sounds.success = sound('../sound/success.mp3');
+  game.sounds.beep1 = sound('../sound/beep1.mp3');
+  game.sounds.beep2 = sound('../sound/beep2.mp3');
 	
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
 	var ballInitSpeed = 500;
@@ -206,7 +233,6 @@ function initPaddle(game, engine, side, initControl) {
   var resetBall = function() {
 		gameState = 'countdown';
 		countDownTime = 3;
-    ball.set('center', mtx.copy_v2(ballInitPoint, mtx.uninit_v2()));
 		var spread = 0.125*Math.PI; // max radians the ball's velocity can diverge from vertical
     var angle = (Math.random()*2-1)*spread;
 		if (Math.random() < 0.5) {
@@ -219,6 +245,7 @@ function initPaddle(game, engine, side, initControl) {
 		heldVelocity = mtx.uninit_v2();
     mtx.set_v2(ballInitSpeed*Math.cos(angle), ballInitSpeed*Math.sin(angle), heldVelocity);
     mtx.set_v2(0, 0, ballPhysics.velocity);
+    ball.set('center', mtx.copy_v2(ballInitPoint, mtx.uninit_v2()));
   };
 	var releaseBall = function() {
 		mtx.copy_v2(heldVelocity, ballPhysics.velocity);
@@ -237,6 +264,12 @@ function initPaddle(game, engine, side, initControl) {
 	};
   resetBall();
   engine.addBody(ball, ballPhysics);
+  ball.onCollision(function(e) {
+    if(e.other.type === 'rline')
+      game.sounds.bounce1.play();
+    else
+      game.sounds.bounce2.play();
+  });
 
   // increse the ball's vertical velocity if it's stuck bouncing between the walls
   var unbrokenWallHits = 0;
@@ -274,11 +307,13 @@ function initPaddle(game, engine, side, initControl) {
   // top
   bounding_wall_bodies[1].onCollision(function(event){
     resetBall();
+    game.sounds.success.play();
 		bottomScore++;
   });
   // bottom
   bounding_wall_bodies[3].onCollision(function(event){
     resetBall();
+    game.sounds.success.play();
 		topScore++;
   });
 
@@ -293,6 +328,7 @@ function initPaddle(game, engine, side, initControl) {
 		topScore = 0;
 		bottomScore = 0;
 		topPaddle.setControl('ai');
+    topPaddle.setAngle(0);
 		resetBall();
   }));
 	startMenu.add(new gu.MenuItem('Two Player', function() {
@@ -378,11 +414,15 @@ function initPaddle(game, engine, side, initControl) {
     }
 
 		if (gameState === 'countdown') {
+      var old = Math.trunc(countDownTime);
 			countDownTime -= dt;
 			if (countDownTime < 0) {
+        game.sounds.beep2.play();
 				gameState = 'play';
 				releaseBall();
-			}
+			} else if (Math.trunc(countDownTime) < old) {
+        game.sounds.beep1.play();
+      }
 		} else if(gameState === 'play') {
 			timeSinceBallSpeedUp += dt;
 			if (timeSinceBallSpeedUp > 10) {
