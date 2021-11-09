@@ -1,4 +1,4 @@
-import * as gu from "../game_utils.mjs";
+import * as gm from "../game.mjs";
 import * as mbl from "../mobile_check.mjs";
 import * as collision from "../collision.mjs";
 import * as mtx from "../mtx.mjs";
@@ -200,8 +200,6 @@ function sound(src, game) {
 			//src_buf = URL.createObjectURL(xhr.response);
 	};
 	xhr.send();
-	if (game)
-		game.debug.audio_src = src_buf;
   //this_.sound = new Howl({
   //  src: [src_buf]
   //});
@@ -218,13 +216,9 @@ function sound(src, game) {
   return this_;
 }
 
-var play = function(sound) {
-	// To Overwrite
-};
-
 (function() {
 	var div = document.getElementById("game");
-	var game = gu.initGame(div, 480, 480*2);
+	var game = gm.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
 
 	try {
@@ -234,9 +228,6 @@ var play = function(sound) {
 			latencyHint: 'interactive',
 			sampleRate: 44100
 		});
-		game.debug.baseLatency = audioCtx.baseLatency;
-		//audioCtx.baseLatency = 0.05;
-		game.debug.outputLatency = audioCtx.outputLatency;
 		const oscillator = audioCtx.createOscillator();
 		const gainNode = audioCtx.createGain();
 		oscillator.detune.value = 0; // value in cents
@@ -386,9 +377,9 @@ var play = function(sound) {
 	var bottomPaddle = initPaddle(game, engine, 'bottom', 'human');
 	var topPaddle = initPaddle(game, engine, 'top', 'ai');
 
-  var startMenu = new gu.Menu('Deflect', game);
+  var startMenu = new gm.Menu('Deflect', game);
   startMenu.subtitle = "ErnestMakes.com";
-	startMenu.add(new gu.MenuItem('One Player', function() {
+	startMenu.add(new gm.MenuItem('One Player', function() {
     game.menu = null;
     game.paused = false;
 		topScore = 0;
@@ -397,7 +388,7 @@ var play = function(sound) {
     topPaddle.setAngle(0);
 		resetBall();
   }));
-	startMenu.add(new gu.MenuItem('Two Player', function() {
+	startMenu.add(new gm.MenuItem('Two Player', function() {
     game.menu = null;
     game.paused = false;
 		topScore = 0;
@@ -405,12 +396,12 @@ var play = function(sound) {
 		topPaddle.setControl('human');
 		resetBall();
   }));
-  var pausedMenu = new gu.Menu('Paused', game);
-	pausedMenu.add(new gu.MenuItem('Unpause', function() {
+  var pausedMenu = new gm.Menu('Paused', game);
+	pausedMenu.add(new gm.MenuItem('Unpause', function() {
     game.menu = null;
     game.paused = false;
   }));
-	pausedMenu.add(new gu.MenuItem('New Game', function() {
+	pausedMenu.add(new gm.MenuItem('New Game', function() {
     game.menu = startMenu;
     game.paused = true;
   }));
@@ -424,12 +415,12 @@ var play = function(sound) {
 			ctx.save();
 			ctx.translate(0.5*game.width, 0.25*game.height);
 			ctx.rotate(Math.PI);
-			gu.fillTextCentered(ctx, ''+topScore+' : '+bottomScore, 0, 0);
+			gm.fillTextCentered(ctx, ''+topScore+' : '+bottomScore, 0, 0);
 			ctx.restore();
-			gu.fillTextCentered(ctx, ''+bottomScore+' : '+topScore, 0.5*game.width, 0.75*game.height);
+			gm.fillTextCentered(ctx, ''+bottomScore+' : '+topScore, 0.5*game.width, 0.75*game.height);
 		} else {
-			gu.fillTextCentered(ctx, ''+topScore, 0.5*game.width, 0.25*game.height);
-			gu.fillTextCentered(ctx, ''+bottomScore, 0.5*game.width, 0.75*game.height);
+			gm.fillTextCentered(ctx, ''+topScore, 0.5*game.width, 0.25*game.height);
+			gm.fillTextCentered(ctx, ''+bottomScore, 0.5*game.width, 0.75*game.height);
 		}
 
     ctx.beginPath();
@@ -466,18 +457,18 @@ var play = function(sound) {
 				ctx.save();
 				ctx.translate(0.333*game.width, 0.5*game.height);
 				ctx.rotate(Math.PI);
-				gu.fillTextCentered(ctx, txt, 0, 0);
+				gm.fillTextCentered(ctx, txt, 0, 0);
 				ctx.restore();
-				gu.fillTextCentered(ctx, txt, 0.667*game.width, 0.5*game.height);
+				gm.fillTextCentered(ctx, txt, 0.667*game.width, 0.5*game.height);
 			} else {
-				gu.fillTextCentered(ctx, txt, 0.5*game.width, 0.5*game.height);
+				gm.fillTextCentered(ctx, txt, 0.5*game.width, 0.5*game.height);
 			}
 		}
 	};
 
   var timeSinceBallSpeedUp = 0;
   game.update = function(dt) {
-    if (!gu.isFullscreen()) {
+    if (!gm.isFullscreen()) {
 			pause();
       return;
     }

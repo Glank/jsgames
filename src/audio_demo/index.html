@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<button id='play'>Play Sound</button>
+
+<script type="module">
+import * as aud from "../audio.mjs";
+
+(async function() {
+  var button = document.getElementById('play');
+  
+  var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  var audioLoad = new Promise(function(resolve, reject) {
+    var request = new XMLHttpRequest();
+    request.open('GET', '../sound/success.mp3', true);
+    request.responseType = 'arraybuffer';
+    request.onload = function() {
+      audioCtx.decodeAudioData(request.response,
+        function(buf) {
+          resolve(buf);
+        },
+        function(e){
+          reject(e);
+        }
+      );
+    };
+    request.send();
+  });
+  var buffer = await audioLoad;
+
+  var source = null;
+  button.onclick = function() {
+    if (!buffer) {
+      alert('error loading audio');
+    }
+    if (source !== null) {
+      try {
+        source.disconnect(audioCtx.destination);
+        source.stop(audioCtx.currentTime);
+      } catch(e) {
+        console.log(e);
+      }
+    }
+    source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    source.start(audioCtx.currentTime);
+  };
+}())
+</script>
+</body>
+</html>
