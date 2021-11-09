@@ -105,9 +105,10 @@ def main():
     if FLAGS['deploy_data'] or FLAGS['deploy_all']:
       cmd('cp -r data/* {}'.format(config['out_dir']))
     if FLAGS['deploy_dependencies'] or FLAGS['deploy_all']:
-      dep_dir = os.path.join(config['out_dir'], 'dependencies')
-      cmd('mkdir -p {}'.format(dep_dir))
-      cmd('cp -r howler/dist/howler.core.min.js {}'.format(dep_dir))
+      print('no external dependencies')
+      #dep_dir = os.path.join(config['out_dir'], 'dependencies')
+      #cmd('mkdir -p {}'.format(dep_dir))
+      #cmd('cp -r howler/dist/howler.core.min.js {}'.format(dep_dir))
 
 if __name__ == '__main__':
   main()

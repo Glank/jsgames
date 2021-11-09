@@ -187,23 +187,40 @@ function initPaddle(game, engine, side, initControl) {
 	return paddle;
 }
 
-function sound(src) {
+function sound(src, game) {
   var this_ = {};
-  this_.sound = new Howl({
-    src: [src]
-  });
-  //this_.sound = document.createElement("audio");
-  //this_.sound.src = src;
-  //this_.sound.setAttribute("preload", "auto");
-  //this_.sound.setAttribute("controls", "none");
-  //this_.sound.style.display = "none";
-  //document.body.appendChild(this_.sound);
+	var xhr = new XMLHttpRequest();
+	//xhr.responseType = 'blob';
+	//xhr.timeout = 4000;
+	xhr.open('GET', src, false);
+	var src_buf = src;
+	xhr.onload = function () {
+			var blob = new Blob(Uint8Array.from(xhr.response, c => c.charCodeAt(0)), {type:'audio/mpeg'});
+			src_buf = URL.createObjectURL(blob);
+			//src_buf = URL.createObjectURL(xhr.response);
+	};
+	xhr.send();
+	if (game)
+		game.debug.audio_src = src_buf;
+  //this_.sound = new Howl({
+  //  src: [src_buf]
+  //});
+  this_.sound = document.createElement("audio");
+  this_.sound.src = src;
+  this_.sound.setAttribute("preload", "auto");
+  this_.sound.setAttribute("controls", "none");
+  this_.sound.style.display = "none";
+  document.body.appendChild(this_.sound);
   this_.play = function(){
-    //this_.sound.currentTime = 0;
+    this_.sound.currentTime = 0;
     this_.sound.play();
   }
   return this_;
 }
+
+var play = function(sound) {
+	// To Overwrite
+};
 
 (function() {
 	var div = document.getElementById("game");
@@ -213,41 +230,28 @@ function sound(src) {
 	try {
 		//sound('../sound/bounce1.mp3').play();
 		const AudioContext = window.AudioContext || window.webkitAudioContext;
-		const audioCtx = new AudioContext();
-		const oscillator1 = audioCtx.createOscillator();
-		const oscillator2 = audioCtx.createOscillator();
+		const audioCtx = new AudioContext({
+			latencyHint: 'interactive',
+			sampleRate: 44100
+		});
+		game.debug.baseLatency = audioCtx.baseLatency;
+		//audioCtx.baseLatency = 0.05;
+		game.debug.outputLatency = audioCtx.outputLatency;
+		const oscillator = audioCtx.createOscillator();
 		const gainNode = audioCtx.createGain();
-		oscillator1.detune.value = 100; // value in cents
-		oscillator1.frequency.value = 440;
-		oscillator1.start(0);
-		oscillator2.detune.value = 100; // value in cents
-		oscillator2.frequency.value = 880;
-		oscillator2.start(0);
-		gainNode.gain.value = 0.02;
+		oscillator.detune.value = 0; // value in cents
+		oscillator.frequency.value = 440;
+		oscillator.start(0);
+		oscillator.connect(gainNode);
+		gainNode.gain.value = 0;
+		gainNode.connect(audioCtx.destination);
 		function playFrequency(f, type, time) {
-			if (Math.random() < 0.5) {
-				try {
-					oscillator2.disconnect(gainNode);
-				} catch(e){}
-				oscillator1.connect(gainNode);
-			} else {
-				try {
-					oscillator1.disconnect(gainNode);
-				} catch(e){}
-				oscillator2.connect(gainNode);
-			}
-			gainNode.gain.value = 0.02;
-			//oscillator.frequency.setValueAtTime(f, audioCtx.currentTime);
-			//oscillator.type = type;
-			gainNode.connect(audioCtx.destination);
+			oscillator.frequency.setValueAtTime(f, audioCtx.currentTime);
+			oscillator.type = type;
+			gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+			gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
+			gainNode.gain.setValueAtTime(0, audioCtx.currentTime+time);
 			audioCtx.resume();
-			setTimeout(function() {
-				try {
-					gainNode.gain.value = 0;
-					gainNode.disconnect(audioCtx.destination);
-					audioCtx.suspend();
-				} catch (e){}
-			}, time*1000);
 		}
 		var audioParams = {
 			'bounce1': [220, 'square', 0.1],
@@ -274,11 +278,11 @@ function sound(src) {
 		game.debug.error_message = e.message;
 		game.debug.error_stack = e.stack;
 	}
-  //game.sounds.bounce1 = sound('../sound/bounce1.mp3');
-  //game.sounds.bounce2 = sound('../sound/bounce2.mp3');
-  //game.sounds.success = sound('../sound/success.mp3');
-  //game.sounds.beep1 = sound('../sound/beep1.mp3');
-  //game.sounds.beep2 = sound('../sound/beep2.mp3');
+  //game.sounds.bounce1 = sound('../sound/bounce1.mp3', game);
+  //game.sounds.bounce2 = sound('../sound/bounce2.mp3', game);
+  //game.sounds.success = sound('../sound/success.mp3', game);
+  //game.sounds.beep1 = sound('../sound/beep1.mp3', game);
+  //game.sounds.beep2 = sound('../sound/beep2.mp3', game);
 	
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
 	var ballInitSpeed = 500;
