@@ -5,19 +5,23 @@
 </head>
 <body>
 
-<button id='play'>Play Sound</button>
+<button id='sample'>Sample</button>
+<button id='tone'>Tone</button>
 
 <script type="module">
 import * as aud from "../audio.mjs";
 
 (async function() {
-  var button = document.getElementById('play');
   
   var audioManager = new aud.AudioManager();
   audioManager.loadEffect('success', '../sound/success.mp3');
+  audioManager.createToneEffect('beep', {frequency:440, type:'square'});
 
-  button.onclick = function() {
+  document.getElementById('sample').onclick = function() {
     audioManager.playEffect('success');
+  };
+  document.getElementById('tone').onclick = function() {
+    audioManager.playEffect('beep');
   };
 }())
 </script>
