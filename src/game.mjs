@@ -144,27 +144,34 @@ class Game {
 		this.update = null;
 	}
   redraw() {
-		var ctx = this.display.getContext("2d");
-		ctx.clearRect(0, 0, this.display.width, this.display.height);
+    var ctx = this.display.getContext("2d");
+    ctx.clearRect(0, 0, this.display.width, this.display.height);
     //ctx.fillStyle = "#FFFFFF";
     //ctx.fillRect(0,0, this.display.width, this.display.height);
     if(this.draw || this.menu) {
-			ctx.save()
-			if(this.rotated) {
-				ctx.translate(this.display.width, 0);
-				ctx.rotate(Math.PI/2);
-			}
-			if(this.menu) {
-				this.menu._draw(ctx);
-			} else if (this.draw) {
-				this.draw(ctx);
-			}
-			if(this.print_debug) {
-				ctx.fillStyle = "#0000FF";
-				ctx.font = "10px Courier";
-				ctx.fillText('fps: '+this.avg_framerate.toFixed(0), 2, 10);
-				var i = 0;
-				for (const [key, value] of Object.entries(this.debug)) {
+      ctx.save()
+      if(this.rotated) {
+        ctx.translate(this.display.width, 0);
+        ctx.rotate(Math.PI/2);
+      }
+      try {
+        if(this.menu) {
+          this.menu._draw(ctx);
+        } else if (this.draw) {
+          this.draw(ctx);
+        }
+      } catch (err) {
+        this.debug.error_message = err.message;
+        this.debug.error_stack = err.stack;
+        console.log(err.message);
+        console.log(err.stack);
+      }
+      if(this.print_debug) {
+        ctx.fillStyle = "#0000FF";
+        ctx.font = "10px Courier";
+        ctx.fillText('fps: '+this.avg_framerate.toFixed(0), 2, 10);
+        var i = 0;
+        for (const [key, value] of Object.entries(this.debug)) {
           var lines = (''+value).split('\n');
           var key_str = ''+key+': ';
           var key_box = ctx.measureText(key_str);
@@ -174,9 +181,9 @@ class Game {
             ctx.fillText(lines[l], val_x, 22+i*12);
             i++;
           }
-				}
-			}
-			ctx.restore();
+        }
+      }
+      ctx.restore();
     }
   }
   _loop () {

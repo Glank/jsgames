@@ -2,6 +2,7 @@ import * as gm from "../game.mjs";
 import * as mbl from "../mobile_check.mjs";
 import * as collision from "../collision.mjs";
 import * as mtx from "../mtx.mjs";
+import * as aud from "../audio.mjs";
 
 function boxContains(box, touch) {
 	return box[0] <= touch.x && touch.x < box[2] && box[1] <= touch.y && touch.y < box[3];
@@ -187,93 +188,23 @@ function initPaddle(game, engine, side, initControl) {
 	return paddle;
 }
 
-function sound(src, game) {
-  var this_ = {};
-	var xhr = new XMLHttpRequest();
-	//xhr.responseType = 'blob';
-	//xhr.timeout = 4000;
-	xhr.open('GET', src, false);
-	var src_buf = src;
-	xhr.onload = function () {
-			var blob = new Blob(Uint8Array.from(xhr.response, c => c.charCodeAt(0)), {type:'audio/mpeg'});
-			src_buf = URL.createObjectURL(blob);
-			//src_buf = URL.createObjectURL(xhr.response);
-	};
-	xhr.send();
-  //this_.sound = new Howl({
-  //  src: [src_buf]
-  //});
-  this_.sound = document.createElement("audio");
-  this_.sound.src = src;
-  this_.sound.setAttribute("preload", "auto");
-  this_.sound.setAttribute("controls", "none");
-  this_.sound.style.display = "none";
-  document.body.appendChild(this_.sound);
-  this_.play = function(){
-    this_.sound.currentTime = 0;
-    this_.sound.play();
-  }
-  return this_;
-}
-
 (function() {
 	var div = document.getElementById("game");
 	var game = gm.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
 
-	try {
-		//sound('../sound/bounce1.mp3').play();
-		const AudioContext = window.AudioContext || window.webkitAudioContext;
-		const audioCtx = new AudioContext({
-			latencyHint: 'interactive',
-			sampleRate: 44100
-		});
-		const oscillator = audioCtx.createOscillator();
-		const gainNode = audioCtx.createGain();
-		oscillator.detune.value = 0; // value in cents
-		oscillator.frequency.value = 440;
-		oscillator.start(0);
-		oscillator.connect(gainNode);
-		gainNode.gain.value = 0;
-		gainNode.connect(audioCtx.destination);
-		function playFrequency(f, type, time) {
-			oscillator.frequency.setValueAtTime(f, audioCtx.currentTime);
-			oscillator.type = type;
-			gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-			gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
-			gainNode.gain.setValueAtTime(0, audioCtx.currentTime+time);
-			audioCtx.resume();
-		}
-		var audioParams = {
-			'bounce1': [220, 'square', 0.1],
-			'bounce2': [220, 'sawtooth', 0.1],
-			'success': [659.25, 'triangle', 0.5],
-			'beep1': [440, 'sine', 0.1],
-			'beep2': [880, 'sine', 0.5]
-		};
-		function makePlayFunction(key) {
-			var play = function() {
-				playFrequency(audioParams[key][0], audioParams[key][1], audioParams[key][2]);
-				game.debug.audio = key;
-			}
-			return play;
-		}
-
-		game.sounds = {};
-		for (var key in audioParams) {
-			game.sounds[key] = {
-				play: makePlayFunction(key)
-			};
-		}
-	} catch (e) {
-		game.debug.error_message = e.message;
-		game.debug.error_stack = e.stack;
-	}
-  //game.sounds.bounce1 = sound('../sound/bounce1.mp3', game);
-  //game.sounds.bounce2 = sound('../sound/bounce2.mp3', game);
-  //game.sounds.success = sound('../sound/success.mp3', game);
-  //game.sounds.beep1 = sound('../sound/beep1.mp3', game);
-  //game.sounds.beep2 = sound('../sound/beep2.mp3', game);
+  var audio = new aud.AudioManager();
+  audio.game = game;
+  audio.createToneEffect('beep1', {frequency:440, type:'sine', durration: 0.1});
+  audio.createToneEffect('beep2', {frequency:880, type:'sine', durration: 0.5});
+  //audio.createToneEffect('bounce1', {frequency:220, type:'square', durration: 0.1});
+  //audio.createToneEffect('bounce2', {frequency:220, type:'sawtooth', durration: 0.1});
+  //audio.createToneEffect('success', {frequency:659.25, type:'sawtooth', durration: 0.5});
+  //audio.loadEffect('beep1', '../sound/beep1.mp3');
+  //audio.loadEffect('beep2', '../sound/beep2.mp3');
+  audio.loadEffect('bounce1', '../sound/bounce1.mp3');
+  audio.loadEffect('bounce2', '../sound/bounce2.mp3');
+  audio.loadEffect('success', '../sound/success.mp3');
 	
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
 	var ballInitSpeed = 500;
@@ -357,21 +288,21 @@ function sound(src, game) {
   // top
   bounding_wall_bodies[1].onCollision(function(event){
     resetBall();
-    game.sounds.success.play();
+    audio.playEffect('success');
 		bottomScore++;
   });
   // bottom
   bounding_wall_bodies[3].onCollision(function(event){
     resetBall();
-    game.sounds.success.play();
+    audio.playEffect('success');
 		topScore++;
   });
 
   ball.onCollision(function(e) {
     if(e.other.type === 'rline')
-      game.sounds.bounce1.play();
+      audio.playEffect('bounce1');
     else if(e.other === bounding_wall_bodies[0] || e.other === bounding_wall_bodies[2])
-      game.sounds.bounce2.play();
+      audio.playEffect('bounce2');
   });
 
 	var bottomPaddle = initPaddle(game, engine, 'bottom', 'human');
@@ -411,7 +342,8 @@ function sound(src, game) {
 		// draw scores
 		ctx.fillStyle = "#808080";
 		ctx.font = "bold 120px arial";
-		if (mbl.isMobileBrowser()) {
+		if (mbl.isMobileBrowser() && topPaddle.control === 'human') {
+      // draw rotationally symetric scores
 			ctx.save();
 			ctx.translate(0.5*game.width, 0.25*game.height);
 			ctx.rotate(Math.PI);
@@ -429,8 +361,8 @@ function sound(src, game) {
     ctx.fillStyle = "blue";
 		ctx.fill();
 
-		bottomPaddle.draw(ctx);
 		topPaddle.draw(ctx);
+		bottomPaddle.draw(ctx);
 
     // touches down
     for (var i = 0; i < game.touchesDown.length; i++) {
@@ -453,7 +385,8 @@ function sound(src, game) {
 			if (count <= 3)
 				txt = ''+count;
       ctx.font = "bold 120px arial";
-			if (mbl.isMobileBrowser()) {
+			if (mbl.isMobileBrowser() && topPaddle.control === 'human') {
+        // draw rotationally symetric countdown
 				ctx.save();
 				ctx.translate(0.333*game.width, 0.5*game.height);
 				ctx.rotate(Math.PI);
@@ -478,11 +411,11 @@ function sound(src, game) {
 			countDownTime -= dt;
 			var cur = Math.trunc(countDownTime);
 			if (countDownTime < 0) {
-        game.sounds.beep2.play();
+        audio.playEffect('beep2');
 				gameState = 'play';
 				releaseBall();
 			} else if (cur < old && cur < 3) {
-        game.sounds.beep1.play();
+        audio.playEffect('beep1');
       }
 		} else if(gameState === 'play') {
 			timeSinceBallSpeedUp += dt;

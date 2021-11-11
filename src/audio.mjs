@@ -29,6 +29,9 @@ export class AudioManager {
 			rampUp: opts.rampUp || 0.01,
 			rampDown: opts.rampDown || 0.05
 		};
+		if (effect.rampUp + effect.rampDown > effect.durration) {
+			throw new Error('rampUp + rampDown > durration for tone '+name);
+		}
 		if (!this.toneGainNode) {
 			// tone oscillator uninitialized, so initilize
 			this.toneGainNode = this.audioCtx.createGain();
