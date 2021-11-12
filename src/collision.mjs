@@ -28,6 +28,7 @@ export class CollisionEngine {
 		this.collision_tests = {
 			"inf_bound:inf_bound": "none",
 			"rline:rline": "none", // TODO
+			"convex_poly:convex_poly": "none", // TODO
 			"circle:circle": {
 				"call_type": "ss",
 				"test": _test_collision_circle_circle
@@ -184,10 +185,11 @@ export class CollisionEngine {
 }
 
 // Supported Types:
-// 	- 'circle' with parameters [radius, center]
-//  - 'rline' (rounded line segment) with parameters [radius, p1, p2]
-//	- 'inf_bound' with parameters [normal, point]
-class CollisionBody {
+// 	- 'circle' with parameters {radius, center}
+//  - 'rline' (rounded line segment) with parameters {radius, p1, p2}
+//	- 'inf_bound' with parameters {normal, point}
+//  - 'convex_poly' with parameters {points}
+export class CollisionBody {
 	constructor(type, params) {
 		this.type = type;
 		this._params = params;
@@ -240,7 +242,45 @@ class CollisionBody {
 					normal:mtx.copy_v2(this._params.normal, mtx.uninit_v2())
 				};
 			};
-		} else {
+		} else if (this.type === 'convex_poly') {
+			this.translate = function(delta) {
+        if (isNaN(delta[0]) || isNaN(delta[1]))
+          throw new Error('Invalid translate: '+delta);
+        for (var i in this._params.points)
+          mtx.add_v2(delta, this._params.points[i], this._params.points[i]);
+			};
+			this.center = function() {
+        var center = mtx.create_v2(0,0);
+        for (var i in this._params.points)
+          mtx.add_v2(center, this._params.points[i], center);
+        mtx.mult_s_v2(1.0/this._params.points.length, center, center);
+        return center;
+			};
+			this._copy_params = function() {
+        var copy = {points:[]};
+        for (var i in this._params.points) {
+          copy.points.push( 
+            mtx.copy_v2(
+              this._params.points[i],
+              mtx.uninit_v2()
+            )
+          )
+        }
+        return copy;
+			};
+      this.gjk_support = function(d) {
+        var max_dot = -Infinity;
+        var max_i = null;
+        for (var i in this._params.points) {
+          var dot = mtx.dot_v2(this._params.points[i], d);
+          if (dot > max_dot) {
+            max_dot = dot;
+            max_i = i;
+          }
+        }
+        return this._params.points[max_i];
+      };
+    } else {
 			throw new Error('Invalid CollisionBody type: '+type);
 		}
 		// the parameters before any given physics update
@@ -476,6 +516,11 @@ function _test_collision_circle_rline(circle, rline) {
 		center: rline.p2
 	};
 	return _test_collision_circle_circle(circle, rline_c2);
+}
+
+function _test_collision_gjk(body1, body2) {
+  // Should work on any convex bodies that have a valid gjk_support function implemented.
+  // TODO
 }
 
 export function initCircle(center, radius) {
