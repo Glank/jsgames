@@ -28,7 +28,11 @@ export class CollisionEngine {
 		this.collision_tests = {
 			"inf_bound:inf_bound": "none",
 			"rline:rline": "none", // TODO
-			"convex_poly:convex_poly": "none", // TODO
+			"convex_poly:convex_poly": {
+        "call_type": "ss",
+        "req_body": true,
+        "test": _test_collision_gjk
+      },
 			"circle:circle": {
 				"call_type": "ss",
 				"test": _test_collision_circle_circle
@@ -93,9 +97,12 @@ export class CollisionEngine {
 			b1p1 = b1p2;
 			b2p1 = b2p2;
 		}
-		if (test.call_type === "ss")
-			collision = test.test(b1p2, b2p2);
-		else if (test.call_type=== "ds")
+		if (test.call_type === "ss") {
+      if (test.req_body)
+        collision = test.test(body1, body2);
+      else
+        collision = test.test(b1p2, b2p2);
+    } else if (test.call_type=== "ds")
 			collision = test.test(b1p1, b1p2, b2p2);
 		else if (test.call_type === "dd")
 			collision = test.test(b1p1, b1p2, b2p1, b2p2);
@@ -107,7 +114,6 @@ export class CollisionEngine {
 			collision._normal2 = tmp;
 		}
     if (collision && isNaN(collision.t)) {
-      console.log(collision);
       throw new Error('Invalid collision time ('+collision.t+') from '+key);
     }
 		return collision;
@@ -277,6 +283,9 @@ export class CollisionBody {
             max_dot = dot;
             max_i = i;
           }
+        }
+        if (max_i === null) {
+          throw Error("Invalid support result in convex_poly");
         }
         return this._params.points[max_i];
       };
@@ -518,9 +527,90 @@ function _test_collision_circle_rline(circle, rline) {
 	return _test_collision_circle_circle(circle, rline_c2);
 }
 
+const GJK_EPSILON = 0.0001;
 function _test_collision_gjk(body1, body2) {
   // Should work on any convex bodies that have a valid gjk_support function implemented.
-  // TODO
+  // https://en.wikipedia.org/wiki/Gilbert%E2%80%93Johnson%E2%80%93Keerthi_distance_algorithm
+  // the current direction towards the origin 'D' in the wikipedia pseudocode
+  var d = mtx.create_v2(1, 0);
+  // -D
+  var d_neg = mtx.mult_s_v2(-1, d, mtx.uninit_v2());
+  // the current point in the minkowski difference, 'A' in the wikipedia pseudocode
+  var md_pt = mtx.sub_v2(body1.gjk_support(d), body2.gjk_support(d_neg), mtx.uninit_v2());
+  var simplex_pts = [mtx.copy_v2(md_pt, mtx.uninit_v2())];
+  // d = -md_pt
+  mtx.copy_v2(md_pt, d_neg);
+  mtx.mult_s_v2(-1, d_neg, d);
+  
+  var contains_origin = false;
+  var iters = 0;
+  while (!contains_origin && iters < 100) {
+    // get the next point in the minkowski difference nearest the origin
+    mtx.sub_v2(body1.gjk_support(d), body2.gjk_support(d_neg), md_pt);
+    // if the next nearest point did not make it past the origin, we know there
+    // can't be a collision.
+    if (mtx.dot_v2(md_pt, d) < 0)
+      return null;
+    // add the new point to the simplex
+    simplex_pts.push(mtx.copy_v2(md_pt, mtx.uninit_v2()));
+    // test each possible case
+    if (simplex_pts.length === 2) {
+      var p0 = simplex_pts[0];
+      var p1 = simplex_pts[1];
+      var p1_to_p0 = mtx.sub_v2(p0, p1, mtx.uninit_v2());
+      if (mtx.dot_v2(p1_to_p0, p1) >= 0) {
+        simplex_pts = [p1];
+        mtx.copy_v2(p1, d_neg);
+        mtx.mult_s_v2(-1, d_neg, d);
+      } else {
+        mtx.orth_v2(p1_to_p0, p1, d_neg);
+        mtx.mult_s_v2(-1, d_neg, d);
+      }
+    } else {
+      var p0 = simplex_pts[0];
+      var p1 = simplex_pts[1];
+      var p2 = simplex_pts[2];
+      var p1_to_p0 = mtx.sub_v2(p0, p1, mtx.uninit_v2());
+      var p2_to_p1 = mtx.sub_v2(p1, p2, mtx.uninit_v2());
+      var p0_to_p2 = mtx.sub_v2(p2, p0, mtx.uninit_v2());
+      var n1 = mtx.orth_v2(p2_to_p1, p1_to_p0, mtx.uninit_v2());
+      var n2 = mtx.orth_v2(p0_to_p2, p2_to_p1, mtx.uninit_v2());
+      var n1_p2 = mtx.dot_v2(n1, p2);
+      var n2_p2 = mtx.dot_v2(n2, p2);
+      if (n1_p2 <= 0) {
+        if (n2_p2 <= 0) {
+          contains_origin = true;
+          break;
+        } else {
+          simplex_pts = [p0, p2];
+          d_neg = n2;
+          mtx.mult_s_v2(-1, d_neg, d);
+        }
+      } else {
+        if (n2_p2 <= 0) {
+          simplex_pts = [p1, p2];
+          d_neg = n1;
+          mtx.mult_s_v2(-1, d_neg, d);
+        } else {
+          simplex_pts = [p2];
+          mtx.add_v2(p0, p1, d);
+          mtx.mult_s_add_v2(-0.5, d, p2, d);
+          mtx.mult_s_v2(-1, d, d_neg);
+        }
+      }
+    }
+    if (isNaN(d[0])) {
+      throw Error('Invalid d in gjk');
+    }
+    iters++;
+  }
+  if (!contains_origin) {
+    throw new Error('GJK timed out');
+  }
+  // TODO figure out normals
+  return {
+    t: 1
+  };
 }
 
 export function initCircle(center, radius) {

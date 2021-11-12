@@ -48,10 +48,14 @@ function drawPolygon(ctx, polygon) {
   engine.addBody(poly2, poly2_physics);
 
 	game.draw = function(ctx) {
+		ctx.lineWidth = 3;
     ctx.strokeStyle = "black";
     drawPolygon(ctx, poly1);
     ctx.stroke();
 
+		if (poly2._overlapping && poly2._overlapping.size> 0) {
+			ctx.strokeStyle = "red";
+		}
     drawPolygon(ctx, poly2);
     ctx.stroke();
 
@@ -72,7 +76,9 @@ function drawPolygon(ctx, polygon) {
 
   game.update = function(dt) {
     poly1_support_angle += 0.5*dt;
-    engine.update(dt);
+		if (!game.debug.error_message) {
+			engine.update(dt);
+		}
   };
   game.set_frame_interval(Math.trunc(1000/60));
 
@@ -80,6 +86,29 @@ function drawPolygon(ctx, polygon) {
   fs_button.onclick = function() {
     gm.tryFullscreen(div);
   };
+
+  document.addEventListener('keydown', function(e) {
+		if(e.code === 'ArrowLeft') {
+			poly2_physics.velocity[0] = -speed;
+		} else if(e.code === 'ArrowRight') {
+			poly2_physics.velocity[0] = speed;
+		} else if(e.code === 'ArrowDown') {
+			poly2_physics.velocity[1] = speed;
+		} else if(e.code === 'ArrowUp') {
+			poly2_physics.velocity[1] = -speed;
+		}
+	});
+  document.addEventListener('keyup', function(e) {
+		if(e.code === 'ArrowLeft') {
+			poly2_physics.velocity[0] = 0;
+		} else if(e.code === 'ArrowRight') {
+			poly2_physics.velocity[0] = 0;
+		} else if(e.code === 'ArrowDown') {
+			poly2_physics.velocity[1] = 0;
+		} else if(e.code === 'ArrowUp') {
+			poly2_physics.velocity[1] = 0;
+		}
+	});
 
   game.print_debug = true;
 })();

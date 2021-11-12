@@ -41,5 +41,13 @@ function test_mult() {
 	assert(mtx.eq_2x2(a_inv_prod, b), "'a_inv_prod' should equal 'b'");
 }
 
+function test_orth() {
+  var base = [3, 1];
+  var target = [2, 1];
+  var orth = mtx.orth_v2(base,target, mtx.uninit_v2());
+  assert(mtx.dot_v2(orth, base) === 0, "orth should return a vector orthoganal to base");;
+}
+
 test_inverse();
 test_mult();
+test_orth();

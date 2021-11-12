@@ -2,8 +2,8 @@
 // Inspiration and code snippits taken from glmatrix:
 // https://glmatrix.net/
 
-var EPSILON = 0.00001;
-var ARRAY_TYPE = (typeof Float32Array !== 'undefined') ? Float32Array : Array;
+export var EPSILON = 0.00001;
+export var ARRAY_TYPE = (typeof Float32Array !== 'undefined') ? Float32Array : Array;
 
 // Creates a 2x2 matrix who's values may not be fully initialized.
 export function uninit_2x2() {
@@ -12,6 +12,14 @@ export function uninit_2x2() {
 
 export function create_2x2(s00, s01, s10, s11) {
 	var m = uninit_2x2();
+	m[0] = s00;
+	m[1] = s01;
+	m[2] = s10;
+	m[3] = s11;
+	return m;
+}
+
+export function set_2x2(s00, s01, s10, s11, m) {
 	m[0] = s00;
 	m[1] = s01;
 	m[2] = s10;
@@ -125,3 +133,11 @@ export function average_v2(v1, v2, out) {
   return out;
 }
 
+// returns a non-normalized vector orthoganal to the base in the direction of target
+export function orth_v2(base, target, out) {
+  var b2 = dot_v2(base, base);
+  var tb = dot_v2(target, base);
+  out[0] = b2*target[0]-tb*base[0];
+  out[1] = b2*target[1]-tb*base[1];
+  return out;
+}
