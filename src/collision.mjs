@@ -172,6 +172,8 @@ export class CollisionEngine {
 			collision.other = body2;
 			collision.normal = collision._normal1;
 			collision.other_normal = collision._normal2;
+			collision.surface = collision._surface1;
+			collision.other_surface = collision._surface2;
 			if (!body1._prev_overlapping.has(body2._index))
 				this._handle_collision(body1, collision);
 			this._handle_overlap(body1, collision);
@@ -179,6 +181,8 @@ export class CollisionEngine {
 			collision.other = body1;
 			collision.normal = collision._normal2;
 			collision.other_normal = collision._normal1;
+			collision.surface = collision._surface2;
+			collision.other_surface = collision._surface1;
 			if (!body2._prev_overlapping.has(body1._index))
 				this._handle_collision(body2, collision);
 			this._handle_overlap(body2, collision);
@@ -287,7 +291,7 @@ export class CollisionBody {
         if (max_i === null) {
           throw Error("Invalid support result in convex_poly");
         }
-        return this._params.points[max_i];
+        return mtx.copy_v2(this._params.points[max_i], mtx.uninit_v2());
       };
     } else {
 			throw new Error('Invalid CollisionBody type: '+type);
@@ -527,7 +531,7 @@ function _test_collision_circle_rline(circle, rline) {
 	return _test_collision_circle_circle(circle, rline_c2);
 }
 
-const GJK_EPSILON = 0.0001;
+const EPA_EPSILON = 0.01;
 function _test_collision_gjk(body1, body2) {
   // Should work on any convex bodies that have a valid gjk_support function implemented.
   // https://en.wikipedia.org/wiki/Gilbert%E2%80%93Johnson%E2%80%93Keerthi_distance_algorithm
@@ -535,8 +539,13 @@ function _test_collision_gjk(body1, body2) {
   var d = mtx.create_v2(1, 0);
   // -D
   var d_neg = mtx.mult_s_v2(-1, d, mtx.uninit_v2());
+	// the points associated with simplex_pts from body1 and body2
+	var body1_pts = []
+	var body2_pts = []
+	body1_pts.push(body1.gjk_support(d));
+	body2_pts.push(body2.gjk_support(d_neg));
   // the current point in the minkowski difference, 'A' in the wikipedia pseudocode
-  var md_pt = mtx.sub_v2(body1.gjk_support(d), body2.gjk_support(d_neg), mtx.uninit_v2());
+  var md_pt = mtx.sub_v2(body1_pts[0], body2_pts[0], mtx.uninit_v2());
   var simplex_pts = [mtx.copy_v2(md_pt, mtx.uninit_v2())];
   // d = -md_pt
   mtx.copy_v2(md_pt, d_neg);
@@ -546,7 +555,9 @@ function _test_collision_gjk(body1, body2) {
   var iters = 0;
   while (!contains_origin && iters < 100) {
     // get the next point in the minkowski difference nearest the origin
-    mtx.sub_v2(body1.gjk_support(d), body2.gjk_support(d_neg), md_pt);
+		body1_pts.push(body1.gjk_support(d));
+		body2_pts.push(body2.gjk_support(d_neg));
+  	md_pt = mtx.sub_v2(body1_pts[body1_pts.length-1], body2_pts[body2_pts.length-1], mtx.uninit_v2());
     // if the next nearest point did not make it past the origin, we know there
     // can't be a collision.
     if (mtx.dot_v2(md_pt, d) < 0)
@@ -560,6 +571,8 @@ function _test_collision_gjk(body1, body2) {
       var p1_to_p0 = mtx.sub_v2(p0, p1, mtx.uninit_v2());
       if (mtx.dot_v2(p1_to_p0, p1) >= 0) {
         simplex_pts = [p1];
+				body1_pts = [body1_pts[1]];
+				body2_pts = [body2_pts[1]];
         mtx.copy_v2(p1, d_neg);
         mtx.mult_s_v2(-1, d_neg, d);
       } else {
@@ -583,33 +596,173 @@ function _test_collision_gjk(body1, body2) {
           break;
         } else {
           simplex_pts = [p0, p2];
+					body1_pts = [body1_pts[0], body1_pts[2]];
+					body2_pts = [body2_pts[0], body2_pts[2]];
           d_neg = n2;
           mtx.mult_s_v2(-1, d_neg, d);
         }
       } else {
         if (n2_p2 <= 0) {
           simplex_pts = [p1, p2];
+					body1_pts = [body1_pts[1], body1_pts[2]];
+					body2_pts = [body2_pts[1], body2_pts[2]];
           d_neg = n1;
           mtx.mult_s_v2(-1, d_neg, d);
         } else {
           simplex_pts = [p2];
+					body1_pts = [body1_pts[2]];
+					body2_pts = [body2_pts[2]];
           mtx.add_v2(p0, p1, d);
           mtx.mult_s_add_v2(-0.5, d, p2, d);
           mtx.mult_s_v2(-1, d, d_neg);
         }
       }
     }
-    if (isNaN(d[0])) {
+    if (isNaN(d[0]))
       throw Error('Invalid d in gjk');
-    }
+		if (simplex_pts.length !== body1_pts.length || body1_pts.length !== body2_pts.length)
+			throw Error('Dropped point somewhere in gjk');
     iters++;
   }
-  if (!contains_origin) {
+  if (!contains_origin)
     throw new Error('GJK timed out');
-  }
+
+	// GJK complete, starting EPA
+	var poly_pts = simplex_pts;
+	// the normals pointing away from the origin for each side of the polygon
+	var normals = [];
+	// the orthoganal distance from the origin to each side of the polygon
+	var dists = [];
+	var min_dist = null;
+	var min_dist_i = -1;
+	// returns the normal for the line segment facing away from the origin and
+	// the orthoganal distance to the line segment form the origin.
+	var get_normal_out = function(p1, p2) {
+		var p1_to_p2 = mtx.sub_v2(p2, p1, mtx.uninit_v2());
+		// project p2 onto p1_to_p2
+		var s = mtx.dot_v2(p2, p1_to_p2)/mtx.dot_v2(p1_to_p2, p1_to_p2);
+		var proj = mtx.mult_s_v2(s, p1_to_p2, mtx.uninit_v2()); 
+		// get the un-normalized normal facing away from the origin
+		var norm = mtx.sub_v2(p2, proj, mtx.uninit_v2());
+		// get the length and normalize
+		var dist = mtx.length_v2(norm);
+		mtx.mult_s_v2(1/dist, norm, norm);
+		return [norm, dist];
+	}
+	for (var i = 0; i < poly_pts.length; i++) {
+		var p1 = poly_pts[i];
+		var p2 = poly_pts[(i+1)%poly_pts.length];
+		var [norm, dist] = get_normal_out(p1, p2);
+		normals.push(norm);
+		dists.push(dist);
+		if (min_dist === null || dist < min_dist) {
+			min_dist = dist;
+			min_dist_i = i;
+		}
+	}
+
+	// removes a given point from poly_pts, body1_psts, and body2_pts then
+	// recalculates the relevant normals and dists
+	var remove_pt = function(i, poly_pts, normals, dists, body1_pts, body2_pts) {
+		poly_pts.splice(i, 1);
+		body1_pts.splice(i, 1);
+		body2_pts.splice(i, 1);
+		normals.splice(i, 1);
+		dists.splice(i,1);
+		i_m1 = (i+poly_pts.length-1)%poly_pts.length;
+		var p1 = poly_pts[i_m1];
+		var p2 = poly_pts[i%poly_pts.length];
+		var [norm, dist] = get_normal_out(p1, p2);
+		normals[i_m1] = norm;
+		dist[i_m1] = dist;
+	}
+	var remove_cavities = function(i, dir, poly_pts, normals, dists, body1_pts, body2_pts) {
+		while(poly_pts.length > 3) {
+			var n = normals[(i-1+poly_pts.length)%poly_pts.length];
+			var p1 = poly_pts[i];
+			var p2 = poly_pts[(i+1)%poly_pts.length];
+			var p1_to_p2 = mtx.sub_v2(p2, p1, mtx.uninit_v2());
+			if (mtx.dot_v2(p1_to_p2, n) > 0) {
+				// found a cavity
+				remove_pt(i, poly_pts, normals, dists, body1_pts, body2_pts);
+			} else {
+				break;
+			}
+			if (dir === 1) {
+				i = i%poly_pts.length;
+			} else if (dir === -1) {
+				i = (i-1+poly_pts.length)%poly_pts.length;
+			} else {
+				throw Error('Invalid dir in remove_cavities');
+			}
+		}
+		return i;
+	}
+
+	var found_closest_side = false;
+	iters = 0;
+	while (!found_closest_side & iters < 100) {
+		d = normals[min_dist_i];
+		mtx.mult_s_v2(-1, d, d_neg);
+		var new_b1_pt = body1.gjk_support(d);
+		var new_b2_pt = body2.gjk_support(d_neg);
+		var new_pt = mtx.sub_v2(new_b1_pt, new_b2_pt, mtx.uninit_v2());
+		// if the new point is within the polygon, we know our closest side is on the
+		// boundary of the minkowski difference
+		var dist = mtx.dot_v2(d, new_pt); // remember that d is normalized
+		if (dist <= min_dist + EPA_EPSILON) {
+			found_closest_side = true;
+			break;
+		}
+		// otherwise, expand the polygon to include the new point
+		var new_i = min_dist_i+1;
+		body1_pts.splice(new_i, 0, new_b1_pt);
+		body2_pts.splice(new_i, 0, new_b2_pt);
+		poly_pts.splice(new_i, 0, new_pt);
+		// calculate new normals
+		var p1 = poly_pts[new_i-1];
+		var p2 = poly_pts[new_i];
+		var [norm, dist] = get_normal_out(p1, p2);
+		normals[new_i-1] = norm;
+		dists[new_i-1] = dist;
+		p1 = p2;
+		p2 = poly_pts[(new_i+1)%poly_pts.length];
+		[norm, dist] = get_normal_out(p1, p2);
+		normals.splice(new_i, 0, norm);
+		dists.splice(new_i, 0, dist);
+		// fix any cavities so that the poly remains concave
+		var new_i_m1 = remove_cavities(new_i-1, -1, poly_pts, normals, dists, body1_pts, body2_pts);
+		new_i = (new_i_m1+1)%poly_pts.length;
+		var new_i_p1 = remove_cavities((new_i+1)%poly_pts.length, 1, poly_pts, normals, dists, body1_pts, body2_pts);
+		new_i = (new_i_p1-1+poly_pts.length)%poly_pts.length;
+		// find the new best distance (and, thus, our next direction)
+		min_dist = dists[0];
+		min_dist_i = 0;
+		for (var i = 1; i < dists.length; i++) {
+			if (dists[i] < min_dist) {
+				min_dist = dists[i];
+				min_dist_i = i;
+			}
+		}
+		if (poly_pts.length !== body1_pts.length || poly_pts.length !== body2_pts.length || poly_pts.length != dists.length || poly_pts.length != normals.length)
+			throw Error('Dropped vector somewhere in epa');
+		iters++;
+	}
+	if (!found_closest_side)
+		throw new Error('EPA timed out');
+
+	var norm = normals[min_dist_i];
+	var p1i = min_dist_i;
+	var p2i = (min_dist_i+1)%poly_pts.length;
+
   // TODO figure out normals
   return {
-    t: 1
+    t: 1,
+		_normal1: mtx.mult_s_v2(-1, norm, mtx.uninit_v2()), // the normal acting against body1
+		_normal2: norm, // the normal acting against body2
+		overlap: dists[min_dist_i],
+		_surface1: [body1_pts[p1i], body1_pts[p2i]],
+		_surface2: [body2_pts[p1i], body2_pts[p2i]],
   };
 }
 
