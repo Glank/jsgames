@@ -1,0 +1,9 @@
+[
+  {
+    "name": "all",
+    "always_run": true,
+    "deps": [
+      "test:all"
+    ]
+  }
+]

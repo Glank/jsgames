@@ -1,3 +1,4 @@
 local_config.json
 bin/
 .*.swp
+**/__pycache__
