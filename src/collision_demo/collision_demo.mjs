@@ -12,8 +12,8 @@ function randomColor() {
   return '#'+r.toString(16)+g.toString(16)+b.toString(16);
 }
 (function() {
-	var div = document.getElementById("game");
-	var game = initGame(div, 480, 480*2);
+  var div = document.getElementById("game");
+  var game = initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
   var balls = [];
   var colors = [];
@@ -59,7 +59,7 @@ function randomColor() {
     ignore: function(other) { return other.type === 'circle'; },
   });
   engine.addBody(paddle, paddlePhysics);
-	game.draw = function(ctx) {
+  game.draw = function(ctx) {
     for (var i = 0; i < balls.length; i++) {
       var ball = balls[i];
       ctx.beginPath();
@@ -75,8 +75,8 @@ function randomColor() {
     ctx.moveTo(paddle.get('p1')[0], paddle.get('p1')[1]);
     ctx.lineTo(paddle.get('p2')[0], paddle.get('p2')[1]);
     ctx.strokeStyle = "black";
-		ctx.stroke();
-	};
+    ctx.stroke();
+  };
   var t = 0;
   game.update = function(dt) {
     t += dt;

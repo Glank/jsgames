@@ -35,10 +35,10 @@ function initFlyer(game, engine) {
   }
   flyer.draw = function(ctx) {
     // draw flyer
-		ctx.lineWidth = this.body.get('radius')*2;
-		ctx.lineCap = "round";
-		ctx.strokeStyle = "black";
-		ctx.beginPath();
+    ctx.lineWidth = this.body.get('radius')*2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "black";
+    ctx.beginPath();
     var angle = this.screenAngle();
     var p1 = [
       this.xOffset+this.length*0.5-0.5*this.length*Math.cos(angle),
@@ -48,35 +48,35 @@ function initFlyer(game, engine) {
       this.xOffset+this.length*0.5+0.5*this.length*Math.cos(angle),
       this.game.height*0.5+0.5*this.length*Math.sin(angle)
     ];
-		ctx.moveTo(p1[0], p1[1]);
-		ctx.lineTo(p2[0], p2[1]);
-		ctx.stroke();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
 
     // draw velocity
     ctx.lineWidth = 1;
-		ctx.strokeStyle = "blue";
+    ctx.strokeStyle = "blue";
     ctx.beginPath();
     p1 =  [this.xOffset+this.length*0.5, this.game.height*0.5];
     p2 = mtx.add_v2(this.physics.velocity, p1, p2);
-		ctx.moveTo(p1[0], p1[1]);
-		ctx.lineTo(p2[0], p2[1]);
-		ctx.stroke();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
 
     // draw lift 
     ctx.lineWidth = 1;
     ctx.strokeStyle = "red";
     ctx.beginPath();
     p2 = mtx.add_v2(this.getLift(), p1, p2);
-		ctx.moveTo(p1[0], p1[1]);
-		ctx.lineTo(p2[0], p2[1]);
-		ctx.stroke();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
 
     // draw drag
     ctx.beginPath();
     p2 = mtx.add_v2(this.getDrag(), p1, p2);
-		ctx.moveTo(p1[0], p1[1]);
-		ctx.lineTo(p2[0], p2[1]);
-		ctx.stroke();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
   }
   flyer.handleKeyDown = function(e) {
     if(e.code === 'ArrowDown') {
@@ -148,8 +148,8 @@ function floatMod(x, mod) {
 }
 
 (function() {
-	var div = document.getElementById("game");
-	var game = gm.initGame(div, 480*2, 480);
+  var div = document.getElementById("game");
+  var game = gm.initGame(div, 480*2, 480);
   var engine = new cln.CollisionEngine();
 
   var flyer = initFlyer(game, engine);
@@ -158,11 +158,11 @@ function floatMod(x, mod) {
 
   var view = mtx.create_v2(0,0);
 
-	game.draw = function(ctx) {
+  game.draw = function(ctx) {
     for (var dx of [0, game.width]) for (var dy of [0, game.height])
       ctx.drawImage(sky, dx-floatMod(view[0], game.width), dy-floatMod(view[1], game.height), game.width, game.height);
     flyer.draw(ctx);
-	};
+  };
 
   game.update = function(dt) {
     engine.update(dt);

@@ -7,41 +7,41 @@ export var ARRAY_TYPE = (typeof Float32Array !== 'undefined') ? Float32Array : A
 
 // Creates a 2x2 matrix who's values may not be fully initialized.
 export function uninit_2x2() {
-	return new ARRAY_TYPE(4);
+  return new ARRAY_TYPE(4);
 }
 
 export function create_2x2(s00, s01, s10, s11) {
-	var m = uninit_2x2();
-	m[0] = s00;
-	m[1] = s01;
-	m[2] = s10;
-	m[3] = s11;
-	return m;
+  var m = uninit_2x2();
+  m[0] = s00;
+  m[1] = s01;
+  m[2] = s10;
+  m[3] = s11;
+  return m;
 }
 
 export function set_2x2(s00, s01, s10, s11, m) {
-	m[0] = s00;
-	m[1] = s01;
-	m[2] = s10;
-	m[3] = s11;
-	return m;
+  m[0] = s00;
+  m[1] = s01;
+  m[2] = s10;
+  m[3] = s11;
+  return m;
 }
 
 export function det_2x2(m) {
-	return m[0] * m[3] - m[2] * m[1];
+  return m[0] * m[3] - m[2] * m[1];
 }
 
 export function inv_2x2(m, out) {
-	var det = det_2x2(m);
-	if (Math.abs(det) < EPSILON) {
-		return null;
-	}
-	var det_i = 1/det;
-	out[0] = det_i*m[3]
-	out[1] = -det_i*m[1]
-	out[2] = -det_i*m[2]
-	out[3] = det_i*m[0]
-	return out;
+  var det = det_2x2(m);
+  if (Math.abs(det) < EPSILON) {
+    return null;
+  }
+  var det_i = 1/det;
+  out[0] = det_i*m[3]
+  out[1] = -det_i*m[1]
+  out[2] = -det_i*m[2]
+  out[3] = det_i*m[0]
+  return out;
 }
 
 export function mult_2x2(a, b, out) {

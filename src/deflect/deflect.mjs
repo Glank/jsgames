@@ -5,89 +5,89 @@ import * as mtx from "../mtx.mjs";
 import * as aud from "../audio.mjs";
 
 function boxContains(box, touch) {
-	return box[0] <= touch.x && touch.x < box[2] && box[1] <= touch.y && touch.y < box[3];
+  return box[0] <= touch.x && touch.x < box[2] && box[1] <= touch.y && touch.y < box[3];
 }
 
 const paddlePhysicsParams = {
-	enforce_no_overlap: function(other) { return other.type === 'inf_bound'; },
-	ignore: function(other) { return other.type === 'circle'; }
+  enforce_no_overlap: function(other) { return other.type === 'inf_bound'; },
+  ignore: function(other) { return other.type === 'circle'; }
 };
 const paddleYOffset = 100;
 function initPaddle(game, engine, side, initControl) {
-	var paddle = {
-  	length: 150,
-		radius: 10,	
-		angularSpeed: 3, // radians/second
-		xDir: 0, // [-1, 0, 1]
-		angularDir: 0, // [-1, 0, 1]
-		side: side
-	};
-	paddle.setControl = function(control) {
-		paddle.control = control;
-		if (control === 'human')
-			paddle.speed = 1000; // pxls/second
-		else if (control === 'ai')
-			paddle.speed = 200; // pxls/second
-		else
-			throw Error('Invalid paddle control: '+control);
-	};
-	paddle.setControl(initControl);
-	if (side === 'top') {
-		paddle.y = paddleYOffset;
-		paddle.touchBox = [0, 0, game.width, game.height/2];
-	} else if (side === 'bottom') {
-		paddle.y = game.height-paddleYOffset; 
-		paddle.touchBox = [0, game.height/2, game.width, game.height];
-	} else {
-		throw Error('Invalid paddle side: '+side);
-	}
+  var paddle = {
+    length: 150,
+    radius: 10,  
+    angularSpeed: 3, // radians/second
+    xDir: 0, // [-1, 0, 1]
+    angularDir: 0, // [-1, 0, 1]
+    side: side
+  };
+  paddle.setControl = function(control) {
+    paddle.control = control;
+    if (control === 'human')
+      paddle.speed = 1000; // pxls/second
+    else if (control === 'ai')
+      paddle.speed = 200; // pxls/second
+    else
+      throw Error('Invalid paddle control: '+control);
+  };
+  paddle.setControl(initControl);
+  if (side === 'top') {
+    paddle.y = paddleYOffset;
+    paddle.touchBox = [0, 0, game.width, game.height/2];
+  } else if (side === 'bottom') {
+    paddle.y = game.height-paddleYOffset; 
+    paddle.touchBox = [0, game.height/2, game.width, game.height];
+  } else {
+    throw Error('Invalid paddle side: '+side);
+  }
   paddle.body = collision.initRoundedLine(
     [game.width/2-paddle.length/2, paddle.y],
     [game.width/2+paddle.length/2, paddle.y],
     paddle.radius
   );
   paddle.physics = new collision.BasicPhysics("stop", paddlePhysicsParams);
-	paddle.draw = function(ctx) {
-		ctx.lineWidth = paddle.body.get('radius')*2;
-		ctx.lineCap = "round";
-		ctx.beginPath();
-		ctx.moveTo(paddle.body.get('p1')[0], paddle.body.get('p1')[1]);
-		ctx.lineTo(paddle.body.get('p2')[0], paddle.body.get('p2')[1]);
-		ctx.strokeStyle = "black";
-		ctx.stroke();
-	};
-	paddle.getAngle = function() {
-		var p1_p2 = mtx.sub_v2(paddle.body.get('p2'), paddle.body.get('p1'), mtx.uninit_v2());
-		return Math.atan2(p1_p2[1], p1_p2[0]);
-	};
-	paddle.getCenter = function() {
-		return mtx.average_v2(paddle.body.get('p1'), paddle.body.get('p2'), mtx.uninit_v2());
-	};
-	paddle.setAngle = function(angle) {
+  paddle.draw = function(ctx) {
+    ctx.lineWidth = paddle.body.get('radius')*2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(paddle.body.get('p1')[0], paddle.body.get('p1')[1]);
+    ctx.lineTo(paddle.body.get('p2')[0], paddle.body.get('p2')[1]);
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+  };
+  paddle.getAngle = function() {
+    var p1_p2 = mtx.sub_v2(paddle.body.get('p2'), paddle.body.get('p1'), mtx.uninit_v2());
+    return Math.atan2(p1_p2[1], p1_p2[0]);
+  };
+  paddle.getCenter = function() {
+    return mtx.average_v2(paddle.body.get('p1'), paddle.body.get('p2'), mtx.uninit_v2());
+  };
+  paddle.setAngle = function(angle) {
     var center = paddle.getCenter();
-		var delta = mtx.create_v2(
-			paddle.length*0.5*Math.cos(angle),
-			paddle.length*0.5*Math.sin(angle)
-		);
-		mtx.sub_v2(center, delta, paddle.body.get('p1'));
-		mtx.add_v2(center, delta, paddle.body.get('p2'));
-	};
-	paddle.update = function(dt, ball, game) {
-		if (paddle.control === 'ai') {
-			var center = paddle.getCenter();
-			if (center[0] < ball.get('center')[0]-10)
-				paddle.xDir = 1;
-			else if (center[0] > ball.get('center')[0]+10)
-				paddle.xDir = -1;
-			else
-				paddle.xDir = 0;
-		} else if (paddle.control === 'human' && mbl.isMobileBrowser()) {
-			var touches = []
-			for (var i in game.touchesDown) {
-				if (boxContains(paddle.touchBox, game.touchesDown[i])) {
-					touches.push(game.touchesDown[i]);
-				}
-			}
+    var delta = mtx.create_v2(
+      paddle.length*0.5*Math.cos(angle),
+      paddle.length*0.5*Math.sin(angle)
+    );
+    mtx.sub_v2(center, delta, paddle.body.get('p1'));
+    mtx.add_v2(center, delta, paddle.body.get('p2'));
+  };
+  paddle.update = function(dt, ball, game) {
+    if (paddle.control === 'ai') {
+      var center = paddle.getCenter();
+      if (center[0] < ball.get('center')[0]-10)
+        paddle.xDir = 1;
+      else if (center[0] > ball.get('center')[0]+10)
+        paddle.xDir = -1;
+      else
+        paddle.xDir = 0;
+    } else if (paddle.control === 'human' && mbl.isMobileBrowser()) {
+      var touches = []
+      for (var i in game.touchesDown) {
+        if (boxContains(paddle.touchBox, game.touchesDown[i])) {
+          touches.push(game.touchesDown[i]);
+        }
+      }
       var center = paddle.getCenter(); 
       if (touches.length === 0) {
         paddle.xDir = 0;
@@ -125,72 +125,72 @@ function initPaddle(game, engine, side, initControl) {
         else
           paddle.xDir = 0;
       }
-		}
+    }
     paddle.physics.velocity[0] = paddle.xDir*paddle.speed;
     var newAngle = paddle.angularDir*dt*paddle.angularSpeed+paddle.getAngle();
     paddle.setAngle(newAngle);
-	};
-	paddle.handleKeyDown = function(e) {
-		if (paddle.control !== 'human')
-			return;
-		if (paddle.side === 'top') {
-			if(e.code === 'KeyA') {
-				paddle.xDir = -1;
-			} else if(e.code === 'KeyD') {
-				paddle.xDir = 1;
-			} else if(e.code === 'KeyS') {
-				paddle.angularDir = -1;
-			} else if(e.code === 'KeyW') {
-				paddle.angularDir = 1;
-			}
-		} else if (paddle.side === 'bottom') {
-			if(e.code === 'ArrowLeft') {
-				paddle.xDir = -1;
-			} else if(e.code === 'ArrowRight') {
-				paddle.xDir = 1;
-			} else if(e.code === 'ArrowDown') {
-				paddle.angularDir = -1;
-			} else if(e.code === 'ArrowUp') {
-				paddle.angularDir = 1;
-			}
-		} else {
-			throw Error('Invalid paddle side: '+paddle.side);
-		}
-	};
-	paddle.handleKeyUp = function(e) {
-		if (paddle.control !== 'human')
-			return;
-		if (paddle.side === 'top') {
-			if(e.code === 'KeyA' && paddle.xDir === -1) {
-				paddle.xDir = 0;
-			} else if(e.code === 'KeyD' && paddle.xDir === 1) {
-				paddle.xDir = 0;
-			} else if(e.code === 'KeyS' && paddle.angularDir === -1) {
-				paddle.angularDir = 0;
-			} else if(e.code === 'KeyW' && paddle.angularDir === 1) {
-				paddle.angularDir = 0;
-			}
-		} else if (paddle.side === 'bottom') {
-			if(e.code === 'ArrowLeft' && paddle.xDir === -1) {
-				paddle.xDir = 0;
-			} else if(e.code === 'ArrowRight' && paddle.xDir === 1) {
-				paddle.xDir = 0;
-			} else if(e.code === 'ArrowDown' && paddle.angularDir === -1) {
-				paddle.angularDir = 0;
-			} else if(e.code === 'ArrowUp' && paddle.angularDir === 1) {
-				paddle.angularDir = 0;
-			}
-		} else {
-			throw Error('Invalid paddle side: '+paddle.side);
-		}
-	};
+  };
+  paddle.handleKeyDown = function(e) {
+    if (paddle.control !== 'human')
+      return;
+    if (paddle.side === 'top') {
+      if(e.code === 'KeyA') {
+        paddle.xDir = -1;
+      } else if(e.code === 'KeyD') {
+        paddle.xDir = 1;
+      } else if(e.code === 'KeyS') {
+        paddle.angularDir = -1;
+      } else if(e.code === 'KeyW') {
+        paddle.angularDir = 1;
+      }
+    } else if (paddle.side === 'bottom') {
+      if(e.code === 'ArrowLeft') {
+        paddle.xDir = -1;
+      } else if(e.code === 'ArrowRight') {
+        paddle.xDir = 1;
+      } else if(e.code === 'ArrowDown') {
+        paddle.angularDir = -1;
+      } else if(e.code === 'ArrowUp') {
+        paddle.angularDir = 1;
+      }
+    } else {
+      throw Error('Invalid paddle side: '+paddle.side);
+    }
+  };
+  paddle.handleKeyUp = function(e) {
+    if (paddle.control !== 'human')
+      return;
+    if (paddle.side === 'top') {
+      if(e.code === 'KeyA' && paddle.xDir === -1) {
+        paddle.xDir = 0;
+      } else if(e.code === 'KeyD' && paddle.xDir === 1) {
+        paddle.xDir = 0;
+      } else if(e.code === 'KeyS' && paddle.angularDir === -1) {
+        paddle.angularDir = 0;
+      } else if(e.code === 'KeyW' && paddle.angularDir === 1) {
+        paddle.angularDir = 0;
+      }
+    } else if (paddle.side === 'bottom') {
+      if(e.code === 'ArrowLeft' && paddle.xDir === -1) {
+        paddle.xDir = 0;
+      } else if(e.code === 'ArrowRight' && paddle.xDir === 1) {
+        paddle.xDir = 0;
+      } else if(e.code === 'ArrowDown' && paddle.angularDir === -1) {
+        paddle.angularDir = 0;
+      } else if(e.code === 'ArrowUp' && paddle.angularDir === 1) {
+        paddle.angularDir = 0;
+      }
+    } else {
+      throw Error('Invalid paddle side: '+paddle.side);
+    }
+  };
   engine.addBody(paddle.body, paddle.physics);
-	return paddle;
+  return paddle;
 }
 
 (function() {
-	var div = document.getElementById("game");
-	var game = gm.initGame(div, 480, 480*2);
+  var div = document.getElementById("game");
+  var game = gm.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
 
   var audio = new aud.AudioManager();
@@ -205,50 +205,50 @@ function initPaddle(game, engine, side, initControl) {
   audio.loadEffect('bounce1', '../sound/bounce1.mp3');
   audio.loadEffect('bounce2', '../sound/bounce2.mp3');
   audio.loadEffect('success', '../sound/success.mp3');
-	
+  
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
-	var ballInitSpeed = 500;
+  var ballInitSpeed = 500;
   var ball = collision.initCircle(mtx.copy_v2(ballInitPoint, mtx.uninit_v2()), 20);
   var ballPhysics = new collision.BasicPhysics("bounce", {
     enforce_no_overlap: function(other) { return other.type === 'rline'; }
   });
-	var topScore = 0;
-	var bottomScore = 0;
-	var gameState = 'countdown';
-	var countDownTime = 3;
-	var heldVelocity = null;
+  var topScore = 0;
+  var bottomScore = 0;
+  var gameState = 'countdown';
+  var countDownTime = 3;
+  var heldVelocity = null;
   var resetBall = function() {
-		gameState = 'countdown';
-		countDownTime = 4;
-		var spread = 0.125*Math.PI; // max radians the ball's velocity can diverge from vertical
+    gameState = 'countdown';
+    countDownTime = 4;
+    var spread = 0.125*Math.PI; // max radians the ball's velocity can diverge from vertical
     var angle = (Math.random()*2-1)*spread;
-		if (Math.random() < 0.5) {
-			// towards the player
-			angle += 0.5*Math.PI;
-		} else {
-			// towards the AI
-			angle += 1.5*Math.PI;
-		}
-		heldVelocity = mtx.uninit_v2();
+    if (Math.random() < 0.5) {
+      // towards the player
+      angle += 0.5*Math.PI;
+    } else {
+      // towards the AI
+      angle += 1.5*Math.PI;
+    }
+    heldVelocity = mtx.uninit_v2();
     mtx.set_v2(ballInitSpeed*Math.cos(angle), ballInitSpeed*Math.sin(angle), heldVelocity);
     mtx.set_v2(0, 0, ballPhysics.velocity);
     ball.set('center', mtx.copy_v2(ballInitPoint, mtx.uninit_v2()));
   };
-	var releaseBall = function() {
-		mtx.copy_v2(heldVelocity, ballPhysics.velocity);
-		heldVelocity = null;
-	};
-	var pause = function() {
-		game.paused = true; 
+  var releaseBall = function() {
+    mtx.copy_v2(heldVelocity, ballPhysics.velocity);
+    heldVelocity = null;
+  };
+  var pause = function() {
+    game.paused = true; 
     game.menu = pausedMenu;
-		if (heldVelocity === null) {
-			heldVelocity = mtx.uninit_v2();
-			mtx.copy_v2(ballPhysics.velocity, heldVelocity);
-			mtx.set_v2(0, 0, ballPhysics.velocity);
-		}
-		countDownTime = 3;
-		gameState = 'countdown';
-	};
+    if (heldVelocity === null) {
+      heldVelocity = mtx.uninit_v2();
+      mtx.copy_v2(ballPhysics.velocity, heldVelocity);
+      mtx.set_v2(0, 0, ballPhysics.velocity);
+    }
+    countDownTime = 3;
+    gameState = 'countdown';
+  };
   resetBall();
   engine.addBody(ball, ballPhysics);
 
@@ -289,13 +289,13 @@ function initPaddle(game, engine, side, initControl) {
   bounding_wall_bodies[1].onCollision(function(event){
     resetBall();
     audio.playEffect('success');
-		bottomScore++;
+    bottomScore++;
   });
   // bottom
   bounding_wall_bodies[3].onCollision(function(event){
     resetBall();
     audio.playEffect('success');
-		topScore++;
+    topScore++;
   });
 
   ball.onCollision(function(e) {
@@ -305,64 +305,64 @@ function initPaddle(game, engine, side, initControl) {
       audio.playEffect('bounce2');
   });
 
-	var bottomPaddle = initPaddle(game, engine, 'bottom', 'human');
-	var topPaddle = initPaddle(game, engine, 'top', 'ai');
+  var bottomPaddle = initPaddle(game, engine, 'bottom', 'human');
+  var topPaddle = initPaddle(game, engine, 'top', 'ai');
 
   var startMenu = new gm.Menu('Deflect', game);
   startMenu.subtitle = "ErnestMakes.com";
-	startMenu.add(new gm.MenuItem('One Player', function() {
+  startMenu.add(new gm.MenuItem('One Player', function() {
     game.menu = null;
     game.paused = false;
-		topScore = 0;
-		bottomScore = 0;
-		topPaddle.setControl('ai');
+    topScore = 0;
+    bottomScore = 0;
+    topPaddle.setControl('ai');
     topPaddle.setAngle(0);
-		resetBall();
+    resetBall();
   }));
-	startMenu.add(new gm.MenuItem('Two Player', function() {
+  startMenu.add(new gm.MenuItem('Two Player', function() {
     game.menu = null;
     game.paused = false;
-		topScore = 0;
-		bottomScore = 0;
-		topPaddle.setControl('human');
-		resetBall();
+    topScore = 0;
+    bottomScore = 0;
+    topPaddle.setControl('human');
+    resetBall();
   }));
   var pausedMenu = new gm.Menu('Paused', game);
-	pausedMenu.add(new gm.MenuItem('Unpause', function() {
+  pausedMenu.add(new gm.MenuItem('Unpause', function() {
     game.menu = null;
     game.paused = false;
   }));
-	pausedMenu.add(new gm.MenuItem('New Game', function() {
+  pausedMenu.add(new gm.MenuItem('New Game', function() {
     game.menu = startMenu;
     game.paused = true;
   }));
   game.menu = startMenu;
 
-	game.draw = function(ctx) {
-		// draw scores
-		ctx.fillStyle = "#808080";
-		ctx.font = "bold 120px arial";
-		if (mbl.isMobileBrowser() && topPaddle.control === 'human') {
+  game.draw = function(ctx) {
+    // draw scores
+    ctx.fillStyle = "#808080";
+    ctx.font = "bold 120px arial";
+    if (mbl.isMobileBrowser() && topPaddle.control === 'human') {
       // draw rotationally symetric scores
-			ctx.save();
-			ctx.translate(0.5*game.width, 0.25*game.height);
-			ctx.rotate(Math.PI);
-			gm.fillTextCentered(ctx, ''+topScore+' : '+bottomScore, 0, 0);
-			ctx.restore();
-			gm.fillTextCentered(ctx, ''+bottomScore+' : '+topScore, 0.5*game.width, 0.75*game.height);
-		} else {
-			gm.fillTextCentered(ctx, ''+topScore, 0.5*game.width, 0.25*game.height);
-			gm.fillTextCentered(ctx, ''+bottomScore, 0.5*game.width, 0.75*game.height);
-		}
+      ctx.save();
+      ctx.translate(0.5*game.width, 0.25*game.height);
+      ctx.rotate(Math.PI);
+      gm.fillTextCentered(ctx, ''+topScore+' : '+bottomScore, 0, 0);
+      ctx.restore();
+      gm.fillTextCentered(ctx, ''+bottomScore+' : '+topScore, 0.5*game.width, 0.75*game.height);
+    } else {
+      gm.fillTextCentered(ctx, ''+topScore, 0.5*game.width, 0.25*game.height);
+      gm.fillTextCentered(ctx, ''+bottomScore, 0.5*game.width, 0.75*game.height);
+    }
 
     ctx.beginPath();
-		ctx.arc(ball.get('center')[0], ball.get('center')[1], ball.get('radius'), 0, 2*Math.PI);
+    ctx.arc(ball.get('center')[0], ball.get('center')[1], ball.get('radius'), 0, 2*Math.PI);
     ctx.closePath();
     ctx.fillStyle = "blue";
-		ctx.fill();
+    ctx.fill();
 
-		topPaddle.draw(ctx);
-		bottomPaddle.draw(ctx);
+    topPaddle.draw(ctx);
+    bottomPaddle.draw(ctx);
 
     // touches down
     for (var i = 0; i < game.touchesDown.length; i++) {
@@ -376,57 +376,57 @@ function initPaddle(game, engine, side, initControl) {
     }
 
     if (gameState === 'countdown') {
-			// tint screen
+      // tint screen
       ctx.fillStyle = "#00000030";
       ctx.fillRect(0,0,game.width,game.height);
       ctx.fillStyle = "#000000";
       var txt = '';
-			var count = Math.ceil(countDownTime);
-			if (count <= 3)
-				txt = ''+count;
+      var count = Math.ceil(countDownTime);
+      if (count <= 3)
+        txt = ''+count;
       ctx.font = "bold 120px arial";
-			if (mbl.isMobileBrowser() && topPaddle.control === 'human') {
+      if (mbl.isMobileBrowser() && topPaddle.control === 'human') {
         // draw rotationally symetric countdown
-				ctx.save();
-				ctx.translate(0.333*game.width, 0.5*game.height);
-				ctx.rotate(Math.PI);
-				gm.fillTextCentered(ctx, txt, 0, 0);
-				ctx.restore();
-				gm.fillTextCentered(ctx, txt, 0.667*game.width, 0.5*game.height);
-			} else {
-				gm.fillTextCentered(ctx, txt, 0.5*game.width, 0.5*game.height);
-			}
-		}
-	};
+        ctx.save();
+        ctx.translate(0.333*game.width, 0.5*game.height);
+        ctx.rotate(Math.PI);
+        gm.fillTextCentered(ctx, txt, 0, 0);
+        ctx.restore();
+        gm.fillTextCentered(ctx, txt, 0.667*game.width, 0.5*game.height);
+      } else {
+        gm.fillTextCentered(ctx, txt, 0.5*game.width, 0.5*game.height);
+      }
+    }
+  };
 
   var timeSinceBallSpeedUp = 0;
   game.update = function(dt) {
     if (!gm.isFullscreen()) {
-			pause();
+      pause();
       return;
     }
 
-		if (gameState === 'countdown') {
+    if (gameState === 'countdown') {
       var old = Math.trunc(countDownTime);
-			countDownTime -= dt;
-			var cur = Math.trunc(countDownTime);
-			if (countDownTime < 0) {
+      countDownTime -= dt;
+      var cur = Math.trunc(countDownTime);
+      if (countDownTime < 0) {
         audio.playEffect('beep2');
-				gameState = 'play';
-				releaseBall();
-			} else if (cur < old && cur < 3) {
+        gameState = 'play';
+        releaseBall();
+      } else if (cur < old && cur < 3) {
         audio.playEffect('beep1');
       }
-		} else if(gameState === 'play') {
-			timeSinceBallSpeedUp += dt;
-			if (timeSinceBallSpeedUp > 10) {
-				mtx.mult_s_v2(1.25, ballPhysics.velocity, ballPhysics.velocity);
-				timeSinceBallSpeedUp = 0;
-			}
-		}
+    } else if(gameState === 'play') {
+      timeSinceBallSpeedUp += dt;
+      if (timeSinceBallSpeedUp > 10) {
+        mtx.mult_s_v2(1.25, ballPhysics.velocity, ballPhysics.velocity);
+        timeSinceBallSpeedUp = 0;
+      }
+    }
 
-		bottomPaddle.update(dt, ball, game);
-		topPaddle.update(dt, ball, game);
+    bottomPaddle.update(dt, ball, game);
+    topPaddle.update(dt, ball, game);
 
     engine.update(dt);
     if (isNaN(bottomPaddle.body.get('p1')[0]) || bottomPaddle.body.get('p1')[0] < 0 || bottomPaddle.body.get('p1')[0] > game.width) {
@@ -440,12 +440,12 @@ function initPaddle(game, engine, side, initControl) {
   game.addTouchListener(function(e) {});
 
   document.addEventListener('keydown', function(e) {
-		topPaddle.handleKeyDown(e);
-		bottomPaddle.handleKeyDown(e);
+    topPaddle.handleKeyDown(e);
+    bottomPaddle.handleKeyDown(e);
   });
   document.addEventListener('keyup', function(e) {
-		topPaddle.handleKeyUp(e);
-		bottomPaddle.handleKeyUp(e);
+    topPaddle.handleKeyUp(e);
+    bottomPaddle.handleKeyUp(e);
   });
 
   game.print_debug = true;
