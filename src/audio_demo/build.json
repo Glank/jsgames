@@ -1,0 +1,35 @@
+[
+  {
+    "name": "all",
+    "deps": [
+      "src/audio_demo:stage_js",
+      "src/audio_demo:stage_html",
+      "data:stage_sound"
+    ]
+  },
+  {
+    "name": "browserify",
+    "rule": "browserify",
+    "in": ["src/audio_demo/audio_demo.js"],
+    "out": ["bin/audio_demo/audio_demo.bundle.js"]
+  },
+  {
+    "name": "stage_js",
+    "rule": "stage",
+    "in": ["bin/audio_demo/audio_demo.bundle.js"],
+    "params" : {
+      "subdir": "audio_demo"
+    },
+    "deps": [
+      "src/audio_demo:browserify"
+    ]
+  },
+  {
+    "name": "stage_html",
+    "rule": "stage",
+    "in": ["src/audio_demo/index.html"],
+    "params" : {
+      "subdir": "audio_demo"
+    }
+  }
+]

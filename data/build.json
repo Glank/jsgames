@@ -1,0 +1,25 @@
+[
+  {
+    "name": "all",
+    "deps": [
+      "data:stage_images",
+      "data:stage_sound"
+    ]
+  },
+  {
+    "name": "stage_images",
+    "rule": "stage",
+    "in": ["data/images/*"],
+    "params": {
+      "subdir": "images"
+    }
+  },
+  {
+    "name": "stage_sound",
+    "rule": "stage",
+    "in": ["data/sound/*"],
+    "params": {
+      "subdir": "sound"
+    }
+  }
+]

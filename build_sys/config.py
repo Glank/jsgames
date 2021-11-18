@@ -22,7 +22,8 @@ def ensure_config_key(config, key, description, default_value=None):
 def local_config():
   config_fn = 'local_config.json'
   required_keys = [
-    ('out_dir', 'The directory to which finalized files are copied.', None)
+    ('staging_dir', 'The directory to which finalized files are copied.', None),
+    ('browserify_bin', 'A path to the browserify binary.', None),
   ]
   config = {}
   if os.path.exists(config_fn):

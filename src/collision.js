@@ -1,9 +1,11 @@
+'use strict';
+
 // My attempt at a 'simple' collision detection engine.
 
-import * as mtx from "./mtx.mjs";
+var mtx = require('./mtx.js');
 
 // The default broad pass for the CollisionEngine. Tests every possible body combination.
-export function exhaustive(bodies, testCollision) {
+function exhaustive(bodies, testCollision) {
   for (var i = 0; i < bodies.length; i++) {
     for (var j = i+1; j < bodies.length; j++) {
       testCollision(bodies[i], bodies[j]);
@@ -13,7 +15,7 @@ export function exhaustive(bodies, testCollision) {
 
 // TODO: implement a more efficient broad pass
 
-export class CollisionEngine {
+class CollisionEngine {
   constructor() {
     // a list of CollisionBodies (see below)
     this._bodies = [];
@@ -199,7 +201,7 @@ export class CollisionEngine {
 //  - 'rline' (rounded line segment) with parameters {radius, p1, p2}
 //  - 'inf_bound' with parameters {normal, point}
 //  - 'convex_poly' with parameters {points}
-export class CollisionBody {
+class CollisionBody {
   constructor(type, params) {
     this.type = type;
     this._params = params;
@@ -315,7 +317,7 @@ export class CollisionBody {
   }
 }
 
-export class BasicPhysics {
+class BasicPhysics {
   constructor(collision_behavior, params) {
     this.velocity = mtx.create_v2(0,0);
     this.acceleration = mtx.create_v2(0,0);
@@ -766,17 +768,27 @@ function _test_collision_gjk(body1, body2) {
   };
 }
 
-export function initCircle(center, radius) {
+function initCircle(center, radius) {
   var params = {center: center, radius: radius};
   return new CollisionBody('circle', params);
 }
 
-export function initInfiniteBoundary(point, normal) {
+function initInfiniteBoundary(point, normal) {
   var params = {point: point, normal:mtx.normalize_v2(normal, mtx.uninit_v2())};
   return new CollisionBody('inf_bound', params);
 }
 
-export function initRoundedLine(point1, point2, radius) {
+function initRoundedLine(point1, point2, radius) {
   var params = {p1:point1, p2:point2, radius:radius};
   return new CollisionBody('rline', params);
 }
+
+module.exports = {
+  exhaustive: exhaustive,
+  CollisionEngine: CollisionEngine,
+  CollisionBody: CollisionBody,
+  BasicPhysics: BasicPhysics,
+  initCircle: initCircle,
+  initInfiniteBoundary: initInfiniteBoundary,
+  initRoundedLine: initRoundedLine
+};

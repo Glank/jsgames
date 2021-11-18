@@ -1,6 +1,10 @@
-import * as collision from "../src/collision.mjs";
-import * as mtx from "../src/mtx.mjs";
-import {assert, approx}  from "../src/test_utils.mjs";
+'use strict';
+
+var collision = require('../src/collision.js');
+var mtx = require('../src/mtx.js');
+var test_utils = require('../src/test_utils.js');
+var assert = test_utils.assert;
+var approx = test_utils.approx;
 
 function circleCollidesWithInfBound() {
   var engine = new collision.CollisionEngine();

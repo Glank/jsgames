@@ -1,5 +1,6 @@
-import {assert} from "../src/test_utils.mjs";
-import * as mtx from "../src/mtx.mjs";
+'use strict';
+var assert = require("../src/test_utils.js").assert;
+var mtx = require("../src/mtx.js");
 
 function test_inverse() {
   var a = mtx.create_2x2(

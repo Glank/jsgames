@@ -1,6 +1,8 @@
-import {isMobileBrowser} from "./mobile_check.mjs";
+'use strict';
 
-export function closeFullscreen() {
+var isMobileBrowser = require('./mobile_check.js').isMobileBrowser;
+
+function closeFullscreen() {
   // https://www.w3schools.com/howto/howto_js_fullscreen.asp
   if (document.exitFullscreen) {
     document.exitFullscreen();
@@ -11,7 +13,7 @@ export function closeFullscreen() {
   }
 }
 
-export function isFullscreen() {
+function isFullscreen() {
   // https://stackoverflow.com/questions/7130397/how-do-i-make-a-div-full-screen
   return document.fullscreenElement ||
     document.webkitFullscreenElement ||
@@ -19,7 +21,7 @@ export function isFullscreen() {
     document.msFullscreenElement;
 }
   
-export function tryFullscreen(element) {
+function tryFullscreen(element) {
   // https://stackoverflow.com/questions/7130397/how-do-i-make-a-div-full-screen
   if (element.requestFullscreen) {
     element.requestFullscreen();
@@ -266,11 +268,11 @@ class Game {
   }
 }
 
-export function initGame(div, width, height){
+function initGame(div, width, height){
   return new Game(div, width, height);
 }
 
-export class MenuItem {
+class MenuItem {
   constructor(text, callback) {
     this.type = 'item'
     this.text = text;
@@ -278,7 +280,7 @@ export class MenuItem {
   }
 }
 
-export function fillTextCentered(ctx, txt, x, y) {
+function fillTextCentered(ctx, txt, x, y) {
   var txt_box = ctx.measureText(txt);
   var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent);
   var txt_x = x-0.5*txt_box.width
@@ -286,7 +288,7 @@ export function fillTextCentered(ctx, txt, x, y) {
   ctx.fillText(txt, txt_x, txt_y);
 }
 
-export class Menu extends MenuItem {
+class Menu extends MenuItem {
   constructor(title_text, game, parent) {
     super(title_text, null);
     var this_ = this;
@@ -342,3 +344,13 @@ export class Menu extends MenuItem {
   }
 }
 
+
+module.exports = {
+  closeFullscreen: closeFullscreen,
+  isFullscreen: isFullscreen,
+  tryFullscreen: tryFullscreen,
+  initGame: initGame,
+  MenuItem: MenuItem,
+  fillTextCentered: fillTextCentered,
+  Menu: Menu
+};

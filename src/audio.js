@@ -1,4 +1,6 @@
-export class AudioManager {
+'use strict';
+
+class AudioManager {
   constructor() {
     this.effects = {};
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -102,3 +104,7 @@ export class AudioManager {
     this.audioCtx.resume();
   }
 }
+
+module.exports = {
+	AudioManager: AudioManager
+};

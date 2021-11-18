@@ -1,9 +1,10 @@
 [
   {
     "name": "all",
-    "always_run": true,
     "deps": [
-      "test:all"
+      "test:all",
+      "data:all",
+      "src:all"
     ]
   }
 ]

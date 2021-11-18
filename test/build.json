@@ -1,7 +1,6 @@
 [
   {
     "name": "all",
-    "always_run": true,
     "deps": [
       "test:mtx",
       "test:collision"
@@ -11,8 +10,8 @@
     "name": "mtx",
     "rule": "js_test",
     "in": [
-      "test/mtx.mjs",
-      "src/mtx.mjs"
+      "test/mtx.js",
+      "src/mtx.js"
     ],
     "out": [
       "bin/test/mtx.pass"
@@ -22,8 +21,8 @@
     "name": "collision",
     "rule": "js_test",
     "in": [
-      "test/collision.mjs",
-      "src/collision.mjs"
+      "test/collision.js",
+      "src/collision.js"
     ],
     "out": [
       "bin/test/collision.pass"

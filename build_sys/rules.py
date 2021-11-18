@@ -7,8 +7,21 @@ import os.path
 import json
 import re
 
+def input_older_than_output(rule_config):
+  return max_modify_time(rule_config['in']) > min_modify_time(rule_config['out'])
+
 def needs_to_run(rule_config):
-  return max_modify_time(rule_config.get('in', [])) > min_modify_time(rule_config.get('out', []))
+  global ALWAYS_RUN
+  if rule_config['rule'] in ALWAYS_RUN or rule_config.get('always_run', False):
+    return True
+  return input_older_than_output(rule_config)
+
+def validate_output(rule_config):
+  global VALIDATE_OUTPUT
+  if rule_config['rule'] not in VALIDATE_OUTPUT or flag('dry_run'):
+    return
+  if input_older_than_output(rule_config):
+    raise Exception('Not all outputs were generated successfully.')
 
 def parse_path(rule_path):
   m = re.match(r'([^:]*):([^:]+)$', rule_path)
@@ -20,10 +33,10 @@ def run_build_rule(rule_path, visited=None):
   global RULES
   # ensure that this rule isn't part of a cyclical chain
   if visited is None:
-    visited = set()
+    visited = []
   if rule_path in visited:
     raise Exception('Rule {} already visited! Cyclical dep chain detected.'.format(rule_path))
-  visited.add(rule_path)
+  visited = visited+[rule_path]
   rule_dir, rule_name = parse_path(rule_path)
   # pen the correct build rule list
   config_fn = os.path.join(rule_dir, 'build.json')
@@ -40,25 +53,29 @@ def run_build_rule(rule_path, visited=None):
   for key in rule_config:
     if key not in ['in', 'out', 'deps', 'name', 'rule', 'params', 'always_run']:
       raise Exception('Unknown key in rule config {}, {}'.format(rule_path, key))
+  # set defaults for easier handling by util functions
+  rule_config['in'] = deglob(rule_config.get('in', []))
+  rule_config['out'] = rule_config.get('out', [])
+  rule_config['deps'] = rule_config.get('deps', [])
+  rule_config['rule'] = rule_config.get('rule', 'noop')
   # if we don't need to run, proceed without building
-  if not rule_config.get('always_run', False) and not needs_to_run(rule_config):
+  if not needs_to_run(rule_config):
     return
   if not flag('quiet'):
-    print('Building {}...'.format(rule_path))
+    print('{}'.format(rule_path))
   # build any necessary dependencies recursively first
-  for dep in rule_config.get('deps', []):
+  for dep in rule_config['deps']:
     run_build_rule(dep, visited=visited)
   # ensure all output file directories exist
-  for out_fp in rule_config.get('out', []):
+  for out_fp in rule_config['out']:
     out_dir, out_fn = os.path.split(out_fp)
     ensure_dir(out_dir)
   # build this rule
-  if rule_config.get('rule', 'noop') not in RULES:
+  if rule_config['rule'] not in RULES:
     raise Exception('Unknown build rule {} for {}'.format(rule_config['rule'], rule_path))
-  RULES[rule_config.get('rule', 'noop')](rule_config)
+  RULES[rule_config['rule']](rule_config)
   # verify that the output was generated
-  if 'out' in rule_config and needs_to_run(rule_config) and not flag('dry_run'):
-    raise Exception('Not all outputs were generated successfully for {}'.format(rule_path))
+  validate_output(rule_config)
 
 def js_test(config):
   flags = local_config().get('nodejs_flags', '')
@@ -68,17 +85,36 @@ def js_test(config):
 def noop(config):
   pass
 
-def pack_js_module(config):
-  # TODO
-  pass
+def browserify(config):
+  assert len(config['in']) == 1
+  assert len(config['out']) == 1
+  browserify = local_config()['browserify_bin']
+  in_fn = config['in'][0]
+  out_fn = config['out'][0]
+  cmd('{} {} -o {}'.format(browserify, in_fn, out_fn))
 
-def pack_js_web(config):
-  # TODO
-  pass
+def stage(config):
+  dest_dir = local_config()['staging_dir']
+  subdir = config.get('params', {}).get('subdir', '')
+  if subdir:
+    dest_dir = os.path.join(dest_dir, subdir)
+  ensure_dir(dest_dir)
+  for src_fn in config['in']:
+    _, fn = os.path.split(src_fn)
+    dest_fn = os.path.join(dest_dir, fn)
+    if modify_time(dest_fn) < modify_time(src_fn):
+      cmd('cp {} {}'.format(src_fn, dest_fn))
 
 RULES = {
   'js_test': js_test,
   'noop': noop,
-  'pack_js_module': pack_js_module,
-  'pack_js_web': pack_js_web,
+  'browserify': browserify,
+  'stage': stage,
 }
+ALWAYS_RUN = set([
+  'noop',
+  'stage',
+])
+VALIDATE_OUTPUT = set([
+  'browserify',
+])

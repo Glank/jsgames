@@ -1,6 +1,12 @@
 from .command import cmd
 
 import os, os.path
+import glob
+
+def modify_time(fn):
+  if os.path.exists(fn):
+    return os.stat(fn).st_mtime
+  return 0
 
 def max_modify_time(files):
   files = [f for f in files if os.path.exists(f)]
@@ -9,9 +15,20 @@ def max_modify_time(files):
   return max(os.stat(f).st_mtime for f in files)
 
 def min_modify_time(files):
-  if any(not os.path.exists(f) for f in files):
+  if not files or any(not os.path.exists(f) for f in files):
     return 0
   return min(os.stat(f).st_mtime for f in files)
 
 def ensure_dir(directory):
-  cmd('mkdir -p {}'.format(directory))
+  if not os.path.exists(directory):
+    cmd('mkdir -p {}'.format(directory))
+
+def deglob(files):
+  """
+  Given a list of files and globs, returns all the files and any files in the globs.
+  """
+  new_files = []
+  for fn_or_glob in files:
+    for fn in glob.glob(fn_or_glob):
+      new_files.append(fn)
+  return new_files
