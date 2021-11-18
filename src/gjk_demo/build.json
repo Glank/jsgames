@@ -1,0 +1,41 @@
+[
+  {
+    "name": "all",
+    "deps": [
+      "src/gjk_demo:stage_js",
+      "src/gjk_demo:stage_html",
+      "data:stage_images"
+    ]
+  },
+  {
+    "name": "browserify",
+    "rule": "browserify",
+    "in": [
+      "src/gjk_demo/gjk_demo.js",
+      "src/collision.js",
+      "src/game.js",
+      "src/mobile_check.js",
+      "src/mtx.js"
+    ],
+    "out": ["bin/gjk_demo/gjk_demo.bundle.js"]
+  },
+  {
+    "name": "stage_js",
+    "rule": "stage",
+    "in": ["bin/gjk_demo/gjk_demo.bundle.js"],
+    "params" : {
+      "subdir": "gjk_demo"
+    },
+    "deps": [
+      "src/gjk_demo:browserify"
+    ]
+  },
+  {
+    "name": "stage_html",
+    "rule": "stage",
+    "in": ["src/gjk_demo/index.html"],
+    "params" : {
+      "subdir": "gjk_demo"
+    }
+  }
+]

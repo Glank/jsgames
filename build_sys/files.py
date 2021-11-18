@@ -29,6 +29,10 @@ def deglob(files):
   """
   new_files = []
   for fn_or_glob in files:
+    found = False
     for fn in glob.glob(fn_or_glob):
       new_files.append(fn)
+      found = True
+    if not found:
+      raise Exception('Pattern {} did not match any files.'.format(fn_or_glob))
   return new_files

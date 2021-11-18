@@ -1,8 +1,10 @@
-import * as gm from "../game.mjs";
-import * as mbl from "../mobile_check.mjs";
-import * as collision from "../collision.mjs";
-import * as mtx from "../mtx.mjs";
-import * as aud from "../audio.mjs";
+'use strict';
+
+var gm = require('../game.js');
+var mbl = require('../mobile_check.js');
+var collision = require('../collision.js');
+var mtx = require('../mtx.js');
+var aud = require('../audio.js');
 
 function boxContains(box, touch) {
   return box[0] <= touch.x && touch.x < box[2] && box[1] <= touch.y && touch.y < box[3];

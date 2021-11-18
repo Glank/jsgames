@@ -1,6 +1,8 @@
-import {initGame, tryFullscreen, isFullscreen} from "../game.mjs";
-import * as collision from "../collision.mjs";
-import * as mtx from "../mtx.mjs";
+'use strict';
+
+var gm = require('../game.js');
+var collision = require('../collision.js');
+var mtx = require('../mtx.js');
 
 function randomColor() {
   var r = 0, g = 0, b = 0;
@@ -13,7 +15,7 @@ function randomColor() {
 }
 (function() {
   var div = document.getElementById("game");
-  var game = initGame(div, 480, 480*2);
+  var game = gm.initGame(div, 480, 480*2);
   var engine = new collision.CollisionEngine();
   var balls = [];
   var colors = [];
@@ -94,7 +96,7 @@ function randomColor() {
 
   var fs_button = document.getElementById("open_fullscreen");
   fs_button.onclick = function() {
-    tryFullscreen(div);
+    gm.tryFullscreen(div);
   };
 
   //game.addTouchListener(function(e) {});

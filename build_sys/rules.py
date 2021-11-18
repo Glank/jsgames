@@ -53,19 +53,19 @@ def run_build_rule(rule_path, visited=None):
   for key in rule_config:
     if key not in ['in', 'out', 'deps', 'name', 'rule', 'params', 'always_run']:
       raise Exception('Unknown key in rule config {}, {}'.format(rule_path, key))
+  # build any necessary dependencies recursively first
+  rule_config['deps'] = rule_config.get('deps', [])
+  for dep in rule_config['deps']:
+    run_build_rule(dep, visited=visited)
   # set defaults for easier handling by util functions
   rule_config['in'] = deglob(rule_config.get('in', []))
   rule_config['out'] = rule_config.get('out', [])
-  rule_config['deps'] = rule_config.get('deps', [])
   rule_config['rule'] = rule_config.get('rule', 'noop')
   # if we don't need to run, proceed without building
   if not needs_to_run(rule_config):
     return
   if not flag('quiet'):
     print('{}'.format(rule_path))
-  # build any necessary dependencies recursively first
-  for dep in rule_config['deps']:
-    run_build_rule(dep, visited=visited)
   # ensure all output file directories exist
   for out_fp in rule_config['out']:
     out_dir, out_fn = os.path.split(out_fp)
@@ -78,6 +78,8 @@ def run_build_rule(rule_path, visited=None):
   validate_output(rule_config)
 
 def js_test(config):
+  assert len(config['in']) >= 1
+  assert len(config['out']) == 1
   flags = local_config().get('nodejs_flags', '')
   cmd('nodejs {} {}'.format(flags, config['in'][0]))
   cmd('touch {}'.format(config['out'][0]))
@@ -86,7 +88,7 @@ def noop(config):
   pass
 
 def browserify(config):
-  assert len(config['in']) == 1
+  assert len(config['in']) >= 1
   assert len(config['out']) == 1
   browserify = local_config()['browserify_bin']
   in_fn = config['in'][0]

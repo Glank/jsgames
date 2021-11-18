@@ -1,0 +1,42 @@
+[
+  {
+    "name": "all",
+    "deps": [
+      "src/deflect:stage_js",
+      "src/deflect:stage_html",
+      "data:stage_sound"
+    ]
+  },
+  {
+    "name": "browserify",
+    "rule": "browserify",
+    "in": [
+      "src/deflect/deflect.js",
+      "src/audio.js",
+      "src/collision.js",
+      "src/game.js",
+      "src/mobile_check.js",
+      "src/mtx.js"
+    ],
+    "out": ["bin/deflect/deflect.bundle.js"]
+  },
+  {
+    "name": "stage_js",
+    "rule": "stage",
+    "in": ["bin/deflect/deflect.bundle.js"],
+    "params" : {
+      "subdir": "deflect"
+    },
+    "deps": [
+      "src/deflect:browserify"
+    ]
+  },
+  {
+    "name": "stage_html",
+    "rule": "stage",
+    "in": ["src/deflect/index.html"],
+    "params" : {
+      "subdir": "deflect"
+    }
+  }
+]

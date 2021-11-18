@@ -10,7 +10,10 @@
   {
     "name": "browserify",
     "rule": "browserify",
-    "in": ["src/audio_demo/audio_demo.js"],
+    "in": [
+      "src/audio_demo/audio_demo.js",
+      "src/audio.js"
+    ],
     "out": ["bin/audio_demo/audio_demo.bundle.js"]
   },
   {

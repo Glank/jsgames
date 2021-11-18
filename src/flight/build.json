@@ -1,0 +1,41 @@
+[
+  {
+    "name": "all",
+    "deps": [
+      "src/flight:stage_js",
+      "src/flight:stage_html",
+      "data:stage_images"
+    ]
+  },
+  {
+    "name": "browserify",
+    "rule": "browserify",
+    "in": [
+      "src/flight/flight.js",
+      "src/collision.js",
+      "src/game.js",
+      "src/mobile_check.js",
+      "src/mtx.js"
+    ],
+    "out": ["bin/flight/flight.bundle.js"]
+  },
+  {
+    "name": "stage_js",
+    "rule": "stage",
+    "in": ["bin/flight/flight.bundle.js"],
+    "params" : {
+      "subdir": "flight"
+    },
+    "deps": [
+      "src/flight:browserify"
+    ]
+  },
+  {
+    "name": "stage_html",
+    "rule": "stage",
+    "in": ["src/flight/index.html"],
+    "params" : {
+      "subdir": "flight"
+    }
+  }
+]

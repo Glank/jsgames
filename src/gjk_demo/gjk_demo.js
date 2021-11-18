@@ -1,6 +1,8 @@
-import * as gm from "../game.mjs";
-import * as cln from "../collision.mjs";
-import * as mtx from "../mtx.mjs";
+'use strict';
+
+var gm = require('../game.js');
+var cln = require('../collision.js');
+var mtx = require('../mtx.js');
 
 function drawPolygon(ctx, polygon) {
   ctx.beginPath();

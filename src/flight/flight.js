@@ -1,8 +1,9 @@
-import * as gm from "../game.mjs";
-import * as mbl from "../mobile_check.mjs";
-import * as cln from "../collision.mjs";
-import * as mtx from "../mtx.mjs";
-import * as aud from "../audio.mjs";
+'use strict';
+
+var gm = require('../game.js');
+var mbl = require('../mobile_check.js');
+var cln = require('../collision.js');
+var mtx = require('../mtx.js');
 
 function initFlyer(game, engine) {
   var flyer = {

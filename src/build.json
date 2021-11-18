@@ -2,7 +2,11 @@
   {
     "name": "all",
     "deps": [
-      "src/audio_demo:all"
+      "src/audio_demo:all",
+      "src/collision_demo:all",
+      "src/deflect:all",
+      "src/flight:all",
+      "src/gjk_demo:all"
     ]
   }
 ]

@@ -1,0 +1,41 @@
+[
+  {
+    "name": "all",
+    "deps": [
+      "src/collision_demo:stage_js",
+      "src/collision_demo:stage_html",
+      "data:stage_images"
+    ]
+  },
+  {
+    "name": "browserify",
+    "rule": "browserify",
+    "in": [
+      "src/collision_demo/collision_demo.js",
+      "src/collision.js",
+      "src/game.js",
+      "src/mobile_check.js",
+      "src/mtx.js"
+    ],
+    "out": ["bin/collision_demo/collision_demo.bundle.js"]
+  },
+  {
+    "name": "stage_js",
+    "rule": "stage",
+    "in": ["bin/collision_demo/collision_demo.bundle.js"],
+    "params" : {
+      "subdir": "collision_demo"
+    },
+    "deps": [
+      "src/collision_demo:browserify"
+    ]
+  },
+  {
+    "name": "stage_html",
+    "rule": "stage",
+    "in": ["src/collision_demo/index.html"],
+    "params" : {
+      "subdir": "collision_demo"
+    }
+  }
+]
