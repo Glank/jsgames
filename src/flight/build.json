@@ -20,15 +20,20 @@
     "out": ["bin/flight/flight.bundle.js"]
   },
   {
+    "name": "compress",
+    "rule": "uglifyjs",
+    "in": ["bin/flight/flight.bundle.js"],
+    "out": ["bin/flight/flight.min.js"],
+    "deps": ["src/flight:browserify"]
+  },
+  {
     "name": "stage_js",
     "rule": "stage",
-    "in": ["bin/flight/flight.bundle.js"],
+    "in": ["bin/flight/flight.min.js"],
     "params" : {
       "subdir": "flight"
     },
-    "deps": [
-      "src/flight:browserify"
-    ]
+    "deps": ["src/flight:compress"]
   },
   {
     "name": "stage_html",

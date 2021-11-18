@@ -20,15 +20,20 @@
     "out": ["bin/gjk_demo/gjk_demo.bundle.js"]
   },
   {
+    "name": "compress",
+    "rule": "uglifyjs",
+    "in": ["bin/gjk_demo/gjk_demo.bundle.js"],
+    "out": ["bin/gjk_demo/gjk_demo.min.js"],
+    "deps": ["src/gjk_demo:browserify"]
+  },
+  {
     "name": "stage_js",
     "rule": "stage",
-    "in": ["bin/gjk_demo/gjk_demo.bundle.js"],
+    "in": ["bin/gjk_demo/gjk_demo.min.js"],
     "params" : {
       "subdir": "gjk_demo"
     },
-    "deps": [
-      "src/gjk_demo:browserify"
-    ]
+    "deps": ["src/gjk_demo:compress"]
   },
   {
     "name": "stage_html",

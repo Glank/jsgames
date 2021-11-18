@@ -17,15 +17,20 @@
     "out": ["bin/audio_demo/audio_demo.bundle.js"]
   },
   {
+    "name": "compress",
+    "rule": "uglifyjs",
+    "in": ["bin/audio_demo/audio_demo.bundle.js"],
+    "out": ["bin/audio_demo/audio_demo.min.js"],
+    "deps": ["src/audio_demo:browserify"]
+  },
+  {
     "name": "stage_js",
     "rule": "stage",
-    "in": ["bin/audio_demo/audio_demo.bundle.js"],
+    "in": ["bin/audio_demo/audio_demo.min.js"],
     "params" : {
       "subdir": "audio_demo"
     },
-    "deps": [
-      "src/audio_demo:browserify"
-    ]
+    "deps": ["src/audio_demo:compress"]
   },
   {
     "name": "stage_html",

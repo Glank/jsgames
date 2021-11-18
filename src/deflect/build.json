@@ -21,15 +21,20 @@
     "out": ["bin/deflect/deflect.bundle.js"]
   },
   {
+    "name": "compress",
+    "rule": "uglifyjs",
+    "in": ["bin/deflect/deflect.bundle.js"],
+    "out": ["bin/deflect/deflect.min.js"],
+    "deps": ["src/deflect:browserify"]
+  },
+  {
     "name": "stage_js",
     "rule": "stage",
-    "in": ["bin/deflect/deflect.bundle.js"],
+    "in": ["bin/deflect/deflect.min.js"],
     "params" : {
       "subdir": "deflect"
     },
-    "deps": [
-      "src/deflect:browserify"
-    ]
+    "deps": ["src/deflect:compress"]
   },
   {
     "name": "stage_html",

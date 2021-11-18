@@ -8,7 +8,7 @@ import json
 import re
 
 def input_older_than_output(rule_config):
-  return max_modify_time(rule_config['in']) > min_modify_time(rule_config['out'])
+  return max_modify_time(rule_config['in']+[rule_config['__config_fn']]) > min_modify_time(rule_config['out'])
 
 def needs_to_run(rule_config):
   global ALWAYS_RUN
@@ -59,6 +59,7 @@ def run_build_rule(rule_path, visited=None):
     run_build_rule(dep, visited=visited)
   # set defaults for easier handling by util functions
   rule_config['in'] = deglob(rule_config.get('in', []))
+  rule_config['__config_fn'] = config_fn
   rule_config['out'] = rule_config.get('out', [])
   rule_config['rule'] = rule_config.get('rule', 'noop')
   # if we don't need to run, proceed without building
@@ -77,6 +78,14 @@ def run_build_rule(rule_path, visited=None):
   # verify that the output was generated
   validate_output(rule_config)
 
+def browserify(config):
+  assert len(config['in']) >= 1
+  assert len(config['out']) == 1
+  browserify = local_config()['browserify_bin']
+  in_fn = config['in'][0]
+  out_fn = config['out'][0]
+  cmd('{} {} -o {}'.format(browserify, in_fn, out_fn))
+
 def js_test(config):
   assert len(config['in']) >= 1
   assert len(config['out']) == 1
@@ -86,14 +95,6 @@ def js_test(config):
 
 def noop(config):
   pass
-
-def browserify(config):
-  assert len(config['in']) >= 1
-  assert len(config['out']) == 1
-  browserify = local_config()['browserify_bin']
-  in_fn = config['in'][0]
-  out_fn = config['out'][0]
-  cmd('{} {} -o {}'.format(browserify, in_fn, out_fn))
 
 def stage(config):
   dest_dir = local_config()['staging_dir']
@@ -107,11 +108,21 @@ def stage(config):
     if modify_time(dest_fn) < modify_time(src_fn):
       cmd('cp {} {}'.format(src_fn, dest_fn))
 
+def uglifyjs(config):
+  assert len(config['in']) >= 1
+  assert len(config['out']) == 1
+  uglifyjs = local_config()['uglifyjs_bin']
+  in_fn = config['in'][0]
+  out_fn = config['out'][0]
+  flags = config.get('params', {}).get('flags', '')
+  cmd('{} -c -m -o {} {} -- {} '.format(uglifyjs, out_fn, flags, in_fn))
+
 RULES = {
+  'browserify': browserify,
   'js_test': js_test,
   'noop': noop,
-  'browserify': browserify,
   'stage': stage,
+  'uglifyjs': uglifyjs,
 }
 ALWAYS_RUN = set([
   'noop',
@@ -119,4 +130,5 @@ ALWAYS_RUN = set([
 ])
 VALIDATE_OUTPUT = set([
   'browserify',
+  'uglifyjs',
 ])

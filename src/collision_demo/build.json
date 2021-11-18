@@ -20,15 +20,20 @@
     "out": ["bin/collision_demo/collision_demo.bundle.js"]
   },
   {
+    "name": "compress",
+    "rule": "uglifyjs",
+    "in": ["bin/collision_demo/collision_demo.bundle.js"],
+    "out": ["bin/collision_demo/collision_demo.min.js"],
+    "deps": ["src/collision_demo:browserify"]
+  },
+  {
     "name": "stage_js",
     "rule": "stage",
-    "in": ["bin/collision_demo/collision_demo.bundle.js"],
+    "in": ["bin/collision_demo/collision_demo.min.js"],
     "params" : {
       "subdir": "collision_demo"
     },
-    "deps": [
-      "src/collision_demo:browserify"
-    ]
+    "deps": ["src/collision_demo:compress"]
   },
   {
     "name": "stage_html",
