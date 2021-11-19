@@ -202,11 +202,11 @@ function initPaddle(game, engine, side, initControl) {
   //audio.createToneEffect('bounce1', {frequency:220, type:'square', durration: 0.1});
   //audio.createToneEffect('bounce2', {frequency:220, type:'sawtooth', durration: 0.1});
   //audio.createToneEffect('success', {frequency:659.25, type:'sawtooth', durration: 0.5});
-  //audio.loadEffect('beep1', '../sound/beep1.mp3');
-  //audio.loadEffect('beep2', '../sound/beep2.mp3');
-  audio.loadEffect('bounce1', '../sound/bounce1.mp3');
-  audio.loadEffect('bounce2', '../sound/bounce2.mp3');
-  audio.loadEffect('success', '../sound/success.mp3');
+  //audio.loadEffect('beep1', (document.game_data_root || '..')+'/sound/beep1.mp3');
+  //audio.loadEffect('beep2', (document.game_data_root || '..')+'/sound/beep2.mp3');
+  audio.loadEffect('bounce1', (document.game_data_root || '..')+'/sound/bounce1.mp3');
+  audio.loadEffect('bounce2', (document.game_data_root || '..')+'/sound/bounce2.mp3');
+  audio.loadEffect('success', (document.game_data_root || '..')+'/sound/success.mp3');
   
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
   var ballInitSpeed = 500;

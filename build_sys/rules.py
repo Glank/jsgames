@@ -97,16 +97,17 @@ def noop(config):
   pass
 
 def stage(config):
-  dest_dir = local_config()['staging_dir']
   subdir = config.get('params', {}).get('subdir', '')
-  if subdir:
-    dest_dir = os.path.join(dest_dir, subdir)
-  ensure_dir(dest_dir)
-  for src_fn in config['in']:
-    _, fn = os.path.split(src_fn)
-    dest_fn = os.path.join(dest_dir, fn)
-    if modify_time(dest_fn) < modify_time(src_fn):
-      cmd('cp {} {}'.format(src_fn, dest_fn))
+  dest_dirs = local_config()['staging_dir'].split(';')
+  for dest_dir in dest_dirs:
+    if subdir:
+        dest_dir = os.path.join(dest_dir, subdir)
+    ensure_dir(dest_dir)
+    for src_fn in config['in']:
+      _, fn = os.path.split(src_fn)
+      dest_fn = os.path.join(dest_dir, fn)
+      if modify_time(dest_fn) < modify_time(src_fn):
+        cmd('cp {} {}'.format(src_fn, dest_fn))
 
 def uglifyjs(config):
   assert len(config['in']) >= 1
