@@ -43,7 +43,7 @@ class Game {
     display.height = height;
     display.style["background-color"] = "white";
     display.style["margin"] = 0;
-    display.style["position"] = "absolute";
+    display.style["position"] = "relative";
     display.style["top"] = "50%";
     display.style["left"] = "50%";
     display.style["-ms-transform"] = "translate(-50%, -50%)";
@@ -64,6 +64,17 @@ class Game {
     this.paused = false;
     this.max_dt = 0.1;
 
+		this.ad_server = document.ad_server || 'https://ernestmakes.com/help';
+		this.ad_countdown = -1;
+		var ad_counter = document.createElement('label');
+    ad_counter.style['background-color'] = 'white';
+    ad_counter.style['position'] = 'absolute';
+    ad_counter.style['top'] = '0';
+    ad_counter.style['right'] = '0';
+		ad_counter.style['display'] = 'inline-block';
+		this.ad_counter = ad_counter;
+		this.ads_played = 0;
+		this.max_ads = 1;
 
     var game = this;
     this.touchesDown = [];
@@ -145,11 +156,31 @@ class Game {
     this.draw = null;
     this.update = null;
   }
+	_updateAdCounter() {
+		this.ad_counter.innerHTML = 'Ad will end in '+(this.ad_countdown|0)+' seconds...';
+	}
+	playAd(seconds) {
+		if (this.ads_played >= this.max_ads)
+			return;
+		this.ads_played++;
+		this.ad_countdown = seconds || 10;
+		var game = this;
+		//var params = {mode:'cors'};
+    fetch(this.ad_server+'?width='+this.width+'&height='+this.height)
+			.then(response => response.text())
+			.then(function(text) {
+				game.div.innerHTML = text;
+				game._updateAdCounter();
+				game.div.appendChild(game.ad_counter);
+			});
+	}
   redraw() {
     var ctx = this.display.getContext("2d");
     ctx.clearRect(0, 0, this.display.width, this.display.height);
-    //ctx.fillStyle = "#FFFFFF";
-    //ctx.fillRect(0,0, this.display.width, this.display.height);
+		if (this.ad_countdown > 0) {
+			this._updateAdCounter();
+			return;
+		}
     if(this.draw || this.menu) {
       ctx.save()
       if(this.rotated) {
@@ -240,10 +271,18 @@ class Game {
         this._last_updated = performance.now();
       }
     }
+		if (this.ad_countdown >= 0) {
+			this.ad_countdown -= dt;
+			if (this.ad_countdown < 0) {
+				// restore the display once the ad times out
+				this.div.innerHTML = '';
+				this.div.appendChild(this.display);
+			}
+		}
     var game = this;
     window.requestAnimationFrame(function() {game.redraw()});
     this.avg_framerate = (this.avg_framerate*15+(1/dt))/16;
-    if (this.update && (!this.paused) && (!this.menu)) {
+    if (this.update && (!this.paused) && (!this.menu) && (this.ad_countdown < 0)) {
       try {
         this.update(Math.min(dt, this.max_dt));
       } catch(err) {

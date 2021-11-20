@@ -199,11 +199,6 @@ function initPaddle(game, engine, side, initControl) {
   audio.game = game;
   audio.createToneEffect('beep1', {frequency:440, type:'sine', durration: 0.1});
   audio.createToneEffect('beep2', {frequency:880, type:'sine', durration: 0.5});
-  //audio.createToneEffect('bounce1', {frequency:220, type:'square', durration: 0.1});
-  //audio.createToneEffect('bounce2', {frequency:220, type:'sawtooth', durration: 0.1});
-  //audio.createToneEffect('success', {frequency:659.25, type:'sawtooth', durration: 0.5});
-  //audio.loadEffect('beep1', (document.game_data_root || '..')+'/sound/beep1.mp3');
-  //audio.loadEffect('beep2', (document.game_data_root || '..')+'/sound/beep2.mp3');
   audio.loadEffect('bounce1', (document.game_data_root || '..')+'/sound/bounce1.mp3');
   audio.loadEffect('bounce2', (document.game_data_root || '..')+'/sound/bounce2.mp3');
   audio.loadEffect('success', (document.game_data_root || '..')+'/sound/success.mp3');
@@ -313,6 +308,7 @@ function initPaddle(game, engine, side, initControl) {
   var startMenu = new gm.Menu('Deflect', game);
   startMenu.subtitle = "ErnestMakes.com";
   startMenu.add(new gm.MenuItem('One Player', function() {
+    game.playAd();
     game.menu = null;
     game.paused = false;
     topScore = 0;
@@ -322,6 +318,7 @@ function initPaddle(game, engine, side, initControl) {
     resetBall();
   }));
   startMenu.add(new gm.MenuItem('Two Player', function() {
+    game.playAd();
     game.menu = null;
     game.paused = false;
     topScore = 0;
@@ -450,5 +447,5 @@ function initPaddle(game, engine, side, initControl) {
     bottomPaddle.handleKeyUp(e);
   });
 
-  game.print_debug = true;
+  //game.print_debug = true;
 })();
