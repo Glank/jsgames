@@ -51,7 +51,7 @@ class AudioManager {
       data:null,
       source:null
     };
-    effect.promis = fetch(src)
+    effect.promise = fetch(src)
       .then(response => response.arrayBuffer())
       .then(buf => this.audioCtx.decodeAudioData(buf))
       .then(data => effect.data = data)
@@ -68,21 +68,11 @@ class AudioManager {
       this._displayError(new Error('Invalid audio effect type: '+effect.type));
   }
   _playSample(effect) {
-    if (!effect.data)
-      return;
-    if (effect.source !== null) {
-      try {
-        effect.source.disconnect(this.masterGainNode);
-        effect.source.stop(this.audioCtx.currentTime);
-      } catch(err) {
-        this._displayError(err);
-      }
-    }
-    effect.source = this.audioCtx.createBufferSource();
-    effect.source.buffer = effect.data;
-    effect.source.connect(this.masterGainNode);
-    effect.source.start(this.audioCtx.currentTime);
-    this.audioCtx.resume();
+    effect.promise.then(_ => {
+			effect.source = new AudioBufferSourceNode(this.audioCtx, {buffer:effect.data});
+      effect.source.connect(this.masterGainNode);
+      effect.source.start(0);
+    });
   }
   _playTone(effect) {
     this.oscillator.frequency.cancelScheduledValues(this.audioCtx.currentTime);
