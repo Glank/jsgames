@@ -28,7 +28,8 @@
     "rule": "stage",
     "in": ["bin/audio_demo/audio_demo.min.js"],
     "params" : {
-      "subdir": "audio_demo"
+      "subdir": "audio_demo",
+      "stagingdirs": ["dev"]
     },
     "deps": ["src/audio_demo:compress"]
   },
@@ -37,7 +38,8 @@
     "rule": "stage",
     "in": ["src/audio_demo/index.html"],
     "params" : {
-      "subdir": "audio_demo"
+      "subdir": "audio_demo",
+      "stagingdirs": ["dev"]
     }
   }
 ]

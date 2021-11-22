@@ -26,7 +26,7 @@ Then run ./make.py which will prompt you for your staging directory and your
 browserify and uglifyjs binary paths if you didn't install them exactly as above.
 ```
 {
-  "staging_dir": "/var/www/static/jsgames",
+  "staging_dirs": "/var/www/static/jsgames",
   "browserify_bin": "npm_libs/node_modules/.bin/browserify",
   "uglifyjs_bin": "npm_libs/node_modules/.bin/uglifyjs"
 }

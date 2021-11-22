@@ -31,7 +31,8 @@
     "rule": "stage",
     "in": ["bin/gjk_demo/gjk_demo.min.js"],
     "params" : {
-      "subdir": "gjk_demo"
+      "subdir": "gjk_demo",
+      "stagingdirs": ["dev"]
     },
     "deps": ["src/gjk_demo:compress"]
   },
@@ -40,7 +41,8 @@
     "rule": "stage",
     "in": ["src/gjk_demo/index.html"],
     "params" : {
-      "subdir": "gjk_demo"
+      "subdir": "gjk_demo",
+      "stagingdirs": ["dev"]
     }
   }
 ]

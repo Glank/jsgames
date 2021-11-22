@@ -1,8 +1,10 @@
 import json
 import os.path
 
-def ensure_config_key(config, key, description, default_gen=None):
+def ensure_config_key(config, key, description, default_gen, value_constructor):
   '''returns True if the config was updated.'''
+  if value_constructor is None:
+    value_constructor = lambda x: x
   if key not in config:
     if description is not None:
       print('{}: {}'.format(key, description))
@@ -11,12 +13,12 @@ def ensure_config_key(config, key, description, default_gen=None):
       val = input('{}? '.format(key))
       if not val:
         raise Exception('Config value for {} not set.'.format(key))
-      config[key] = val
+      config[key] = value_constructor(val)
     else:
       val = input('{} [{}]? '.format(key, default_value))
       if not val:
         val = default_value
-      config[key] = val
+      config[key] = value_constructor(val)
     return True
   return False
 
@@ -28,20 +30,23 @@ def defualt_files(default_fns):
     return None
   return closure
 
+def construct_staging_dirs(user_input):
+  return {'dev': user_input}
+
 def local_config():
   config_fn = 'local_config.json'
   required_keys = [
-    ('staging_dir', 'The directory to which finalized files are copied.', None),
+    ('staging_dirs', 'The director(y|ies) to which finalized files are copied.', None, construct_staging_dirs),
     ('browserify_bin', 'A path to the browserify binary.', defualt_files([
       'npm_libs/node_modules/.bin/browserify',
       '/usr/bin/browserify',
       '/usr/local/bin/browserify',
-    ])),
+    ]), None),
     ('uglifyjs_bin', 'A path to the uglifyjs binary.', defualt_files([
       'npm_libs/node_modules/.bin/uglifyjs',
       '/usr/bin/uglifyjs',
       '/usr/local/bin/uglifyjs',
-    ])),
+    ]), None),
   ]
   config = {}
   if os.path.exists(config_fn):
@@ -49,7 +54,7 @@ def local_config():
       config = json.load(f)
 
   config_updated = any(
-    ensure_config_key(config, k, d, v) for k, d, v in required_keys
+    ensure_config_key(config, *params) for params in required_keys
   )
 
   if config_updated:

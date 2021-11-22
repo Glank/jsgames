@@ -41,7 +41,8 @@
     "rule": "stage",
     "in": ["src/deflect/index.html"],
     "params" : {
-      "subdir": "deflect"
+      "subdir": "deflect",
+      "stagingdirs": ["dev"]
     }
   }
 ]

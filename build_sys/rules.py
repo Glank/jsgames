@@ -97,11 +97,16 @@ def noop(config):
   pass
 
 def stage(config):
-  subdir = config.get('params', {}).get('subdir', '')
-  dest_dirs = local_config()['staging_dir'].split(';')
-  for dest_dir in dest_dirs:
-    if subdir:
-        dest_dir = os.path.join(dest_dir, subdir)
+  params = config.get('params', {})
+  sub_dir = params.get('subdir', '')
+  staging_dirs = params.get('stagingdirs', [])
+  dest_dirs = local_config()['staging_dirs']
+  if not staging_dirs:
+    staging_dirs = list(dest_dirs.keys())
+  for staging_dir in staging_dirs:
+    dest_dir = dest_dirs[staging_dir]
+    if sub_dir:
+        dest_dir = os.path.join(dest_dir, sub_dir)
     ensure_dir(dest_dir)
     for src_fn in config['in']:
       _, fn = os.path.split(src_fn)

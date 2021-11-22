@@ -31,7 +31,8 @@
     "rule": "stage",
     "in": ["bin/collision_demo/collision_demo.min.js"],
     "params" : {
-      "subdir": "collision_demo"
+      "subdir": "collision_demo",
+      "stagingdirs": ["dev"]
     },
     "deps": ["src/collision_demo:compress"]
   },
@@ -40,7 +41,8 @@
     "rule": "stage",
     "in": ["src/collision_demo/index.html"],
     "params" : {
-      "subdir": "collision_demo"
+      "subdir": "collision_demo",
+      "stagingdirs": ["dev"]
     }
   }
 ]

@@ -31,7 +31,8 @@
     "rule": "stage",
     "in": ["bin/flight/flight.min.js"],
     "params" : {
-      "subdir": "flight"
+      "subdir": "flight",
+      "stagingdirs": ["dev"]
     },
     "deps": ["src/flight:compress"]
   },
@@ -40,7 +41,8 @@
     "rule": "stage",
     "in": ["src/flight/index.html"],
     "params" : {
-      "subdir": "flight"
+      "subdir": "flight",
+      "stagingdirs": ["dev"]
     }
   }
 ]

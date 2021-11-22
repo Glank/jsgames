@@ -11,7 +11,8 @@
     "rule": "stage",
     "in": ["data/images/*"],
     "params": {
-      "subdir": "images"
+      "subdir": "images",
+      "stagingdirs": ["dev"]
     }
   },
   {
