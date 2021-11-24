@@ -3,3 +3,4 @@ bin/
 npm_libs/
 .*.swp
 **/__pycache__
+media/

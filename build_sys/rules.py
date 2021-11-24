@@ -99,7 +99,7 @@ def noop(config):
 def stage(config):
   params = config.get('params', {})
   sub_dir = params.get('subdir', '')
-  staging_dirs = params.get('stagingdirs', [])
+  staging_dirs = params['stagingdirs']
   dest_dirs = local_config()['staging_dirs']
   if not staging_dirs:
     staging_dirs = list(dest_dirs.keys())

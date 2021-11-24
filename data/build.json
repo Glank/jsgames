@@ -9,18 +9,25 @@
   {
     "name": "stage_images",
     "rule": "stage",
-    "in": ["data/images/*"],
+    "in": ["media/images/*"],
     "params": {
       "subdir": "images",
-      "stagingdirs": ["dev"]
+      "stagingdirs": [
+        "dev",
+        "media"
+      ]
     }
   },
   {
     "name": "stage_sound",
     "rule": "stage",
-    "in": ["data/sound/*"],
+    "in": ["media/sound/*"],
     "params": {
-      "subdir": "sound"
+      "subdir": "sound",
+      "stagingdirs": [
+        "dev",
+        "media"
+      ]
     }
   }
 ]
