@@ -14,6 +14,11 @@ class AudioManager {
 
     this.game = null;
   }
+	setVolume(value) {
+		if (value < 0 || value > 1)
+			throw new Error('Invalid volume, must be in [0,1]: '+value);
+		this.masterGainNode.gain.value = value;
+	}
   _displayError(err) {
     if (this.game) {
       this.game.debug.error_message = err.message;
@@ -48,14 +53,11 @@ class AudioManager {
   loadEffect(name, src) {
     var effect = {
       type:'sample',
-      data:null,
-      source:null
     };
-    effect.promise = fetch(src)
-      .then(response => response.arrayBuffer())
-      .then(buf => this.audioCtx.decodeAudioData(buf))
-      .then(data => effect.data = data)
-      .catch(err => this._displayError(err));
+		effect.audio = new Audio(src);
+		effect.audio.preload = 'auto';
+		effect.source = this.audioCtx.createMediaElementSource(effect.audio);
+		effect.source.connect(this.masterGainNode);
     this.effects[name] = effect;
   }
   playEffect(name) {
@@ -68,11 +70,9 @@ class AudioManager {
       this._displayError(new Error('Invalid audio effect type: '+effect.type));
   }
   _playSample(effect) {
-    effect.promise.then(_ => {
-			effect.source = new AudioBufferSourceNode(this.audioCtx, {buffer:effect.data});
-      effect.source.connect(this.masterGainNode);
-      effect.source.start(0);
-    });
+		effect.audio.currentTime = 0;
+		effect.audio.play();
+		this.audioCtx.resume();
   }
   _playTone(effect) {
     this.oscillator.frequency.cancelScheduledValues(this.audioCtx.currentTime);

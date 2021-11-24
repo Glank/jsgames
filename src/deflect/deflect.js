@@ -305,6 +305,15 @@ function initPaddle(game, engine, side, initControl) {
   var bottomPaddle = initPaddle(game, engine, 'bottom', 'human');
   var topPaddle = initPaddle(game, engine, 'top', 'ai');
 
+  var mute = new gm.MenuItem('Mute', function() {
+    if (this.text === 'Mute') {
+      audio.setVolume(0);
+      this.text = 'Unmute';
+    } else {
+      audio.setVolume(1);
+      this.text = 'Mute';
+    }
+  });
   var startMenu = new gm.Menu('Deflect', game);
   startMenu.subtitle = "ErnestMakes.com";
   startMenu.add(new gm.MenuItem('One Player', function() {
@@ -326,6 +335,7 @@ function initPaddle(game, engine, side, initControl) {
     topPaddle.setControl('human');
     resetBall();
   }));
+  startMenu.add(mute);
   var pausedMenu = new gm.Menu('Paused', game);
   pausedMenu.add(new gm.MenuItem('Unpause', function() {
     game.menu = null;
@@ -335,6 +345,7 @@ function initPaddle(game, engine, side, initControl) {
     game.menu = startMenu;
     game.paused = true;
   }));
+  pausedMenu.add(mute);
   game.menu = startMenu;
 
   game.draw = function(ctx) {
