@@ -26,14 +26,26 @@ git clone ejk@ernestmakes.com:/home/ejk/media.git
 ln -s /home/ejk/media /home/ejk/jsgames/media
 ```
 
-Note down your staging directories, for example,
+Set your staging directories in a new file named local_config.json, for example,
 
 ```
-/var/www/static/jsgames
+{
+  "staging_dirs": {
+    "dev": "/var/www/static/jsgames",
+    "prod": "../ernestmakes/static/jsgames_v0_0",
+    "media": "../ernestmakes/static/jsgames_media"
+  }
+}
 ```
 
-Then run `python3 mymake` which will prompt you for your staging directory and your
-browserify and uglifyjs binary paths if you didn't install them exactly as above.
+Download the build system:
+
+```
+git submodule update --init --recursive
+```
+
+Then run `python3 mymake` which will prompt you for your browserify and uglifyjs binary paths,
+though it should have good defaults if you followed the rules above.
 
 ```
 {
