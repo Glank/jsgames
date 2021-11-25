@@ -21,6 +21,7 @@ npm install uglify-js
 Download, then symlink the media director.
 
 ```
+cd /home/ejk
 git clone ejk@ernestmakes.com:/home/ejk/media.git
 ln -s /home/ejk/media /home/ejk/jsgames/media
 ```
@@ -31,7 +32,7 @@ Note down your staging directories, for example,
 /var/www/static/jsgames
 ```
 
-Then run ./make.py which will prompt you for your staging directory and your
+Then run `python3 mymake` which will prompt you for your staging directory and your
 browserify and uglifyjs binary paths if you didn't install them exactly as above.
 
 ```

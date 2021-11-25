@@ -1,0 +1,3 @@
+[submodule "mymake"]
+	path = mymake
+	url = git@github.com:Glank/mymake.git
