@@ -43,7 +43,7 @@ class Game {
     display.height = height;
     display.style["background-color"] = "white";
     display.style["margin"] = 0;
-    display.style["position"] = "relative";
+    display.style["position"] = "absolute";
     display.style["top"] = "50%";
     display.style["left"] = "50%";
     display.style["-ms-transform"] = "translate(-50%, -50%)";
@@ -280,7 +280,9 @@ class Game {
 			}
 		}
     var game = this;
-    window.requestAnimationFrame(function() {game.redraw()});
+    window.requestAnimationFrame(function() {
+      game.redraw();
+    });
     this.avg_framerate = (this.avg_framerate*15+(1/dt))/16;
     if (this.update && (!this.paused) && (!this.menu) && (this.ad_countdown < 0)) {
       try {
@@ -297,7 +299,9 @@ class Game {
     this._frame_interval = milliseconds;
     window.clearInterval(this._interval);
     var game = this;
-    this._interval = window.setInterval(function() {game._loop();}, this._frame_interval);
+    this._interval = window.setInterval(function() {
+      game._loop();
+    }, this._frame_interval);
   };
   addTouchListener(callback) {
     this.touchCallbacks.push(callback);
@@ -321,9 +325,10 @@ class MenuItem {
 
 function fillTextCentered(ctx, txt, x, y) {
   var txt_box = ctx.measureText(txt);
-  var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent);
+  var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent) || txt_box.actualBoundingBoxAscent;
   var txt_x = x-0.5*txt_box.width
-  var txt_y = y-0.5*box_height+txt_box.fontBoundingBoxAscent;
+  var txt_y = y-0.5*box_height+(txt_box.fontBoundingBoxAscent || txt_box.actualBoundingBoxAscent);
+  console.log('('+txt_x+', '+txt_y+')');
   ctx.fillText(txt, txt_x, txt_y);
 }
 

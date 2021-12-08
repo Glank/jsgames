@@ -349,6 +349,7 @@ function initPaddle(game, engine, side, initControl) {
   game.menu = startMenu;
 
   game.draw = function(ctx) {
+    console.log("drawing.");
     // draw scores
     ctx.fillStyle = "#808080";
     ctx.font = "bold 120px arial";
@@ -411,6 +412,7 @@ function initPaddle(game, engine, side, initControl) {
 
   var timeSinceBallSpeedUp = 0;
   game.update = function(dt) {
+    console.log("updating.");
     if (!gm.isFullscreen()) {
       pause();
       return;
