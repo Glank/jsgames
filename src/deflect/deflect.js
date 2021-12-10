@@ -202,6 +202,7 @@ function initPaddle(game, engine, side, initControl) {
   audio.loadEffect('bounce1', (document.game_data_root || '..')+'/sound/bounce1.mp3');
   audio.loadEffect('bounce2', (document.game_data_root || '..')+'/sound/bounce2.mp3');
   audio.loadEffect('success', (document.game_data_root || '..')+'/sound/success.mp3');
+  game.audio = audio;
   
   var ballInitPoint = mtx.create_v2(game.width/2, game.height/2);
   var ballInitSpeed = 500;
@@ -349,7 +350,6 @@ function initPaddle(game, engine, side, initControl) {
   game.menu = startMenu;
 
   game.draw = function(ctx) {
-    console.log("drawing.");
     // draw scores
     ctx.fillStyle = "#808080";
     ctx.font = "bold 120px arial";
@@ -412,7 +412,6 @@ function initPaddle(game, engine, side, initControl) {
 
   var timeSinceBallSpeedUp = 0;
   game.update = function(dt) {
-    console.log("updating.");
     if (!gm.isFullscreen()) {
       pause();
       return;

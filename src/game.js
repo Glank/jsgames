@@ -63,6 +63,7 @@ class Game {
     this.avg_framerate = 0;
     this.paused = false;
     this.max_dt = 0.1;
+    this.audio = null;
 
 		this.ad_server = document.ad_server || 'https://ernestmakes.com/help';
 		this.ad_countdown = -1;
@@ -139,6 +140,9 @@ class Game {
           game.menu._on_click(event);
         for (var i in game.clickListeners)
           game.clickListeners[i](event);
+        if (game.audio) {
+          game.audio.acquirePermissions();
+        }
       } catch (err) {
         game.debug.error_message = err.message;
         game.debug.error_stack = err.stack;
@@ -328,7 +332,6 @@ function fillTextCentered(ctx, txt, x, y) {
   var box_height = (txt_box.fontBoundingBoxAscent + txt_box.fontBoundingBoxDescent) || txt_box.actualBoundingBoxAscent;
   var txt_x = x-0.5*txt_box.width
   var txt_y = y-0.5*box_height+(txt_box.fontBoundingBoxAscent || txt_box.actualBoundingBoxAscent);
-  console.log('('+txt_x+', '+txt_y+')');
   ctx.fillText(txt, txt_x, txt_y);
 }
 

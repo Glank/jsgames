@@ -1,5 +1,7 @@
 'use strict';
 
+var howler = require('../howler.js');
+
 class AudioManager {
   constructor() {
     this.effects = {};
@@ -7,17 +9,20 @@ class AudioManager {
     this.masterGainNode = this.audioCtx.createGain();
     this.masterGainNode.gain.value = 1;
     this.masterGainNode.connect(this.audioCtx.destination);
-
     this.toneGainNode = null;
     this.oscillator = null;
-    this.toneVolume = 0.5;
+    this.toneVolume = 0.3;
 
     this.game = null;
+  }
+  acquirePermissions() {
+		this.audioCtx.resume();
   }
 	setVolume(value) {
 		if (value < 0 || value > 1)
 			throw new Error('Invalid volume, must be in [0,1]: '+value);
 		this.masterGainNode.gain.value = value;
+		howler.Howler.volume(value);
 	}
   _displayError(err) {
     if (this.game) {
@@ -54,10 +59,10 @@ class AudioManager {
     var effect = {
       type:'sample',
     };
-		effect.audio = new Audio(src);
-		effect.audio.preload = 'auto';
-		effect.source = this.audioCtx.createMediaElementSource(effect.audio);
-		effect.source.connect(this.masterGainNode);
+		effect.sound = new howler.Howl({
+			src: [src],
+			html5: true
+		});
     this.effects[name] = effect;
   }
   playEffect(name) {
@@ -70,9 +75,7 @@ class AudioManager {
       this._displayError(new Error('Invalid audio effect type: '+effect.type));
   }
   _playSample(effect) {
-		effect.audio.currentTime = 0;
-		effect.audio.play();
-		this.audioCtx.resume();
+		effect.sound.play();
   }
   _playTone(effect) {
     this.oscillator.frequency.cancelScheduledValues(this.audioCtx.currentTime);
