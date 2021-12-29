@@ -9,7 +9,7 @@
   {
     "name": "stage_images",
     "rule": "stage",
-    "in": ["media/images/*"],
+    "in": ["media/images/*.png"],
     "params": {
       "subdir": "images",
       "stagingdirs": [
