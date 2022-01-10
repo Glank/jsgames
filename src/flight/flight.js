@@ -5,6 +5,18 @@ var mbl = require('../mobile_check.js');
 var cln = require('../collision.js');
 var mtx = require('../mtx.js');
 
+function calcLift(velocity, angleOfAttack, liftCoef) {
+	var s2a = -Math.sin(2*angleOfAttack);
+	return mtx.create_v2(
+		-liftCoef*velocity[1]*s2a,
+		liftCoef*velocity[0]*s2a,
+	);
+}
+
+function calcDrag(velocity, angleOfAttack, dragCoef) {
+	return mtx.mult_s_v2(-dragCoef*Math.abs(Math.sin(angleOfAttack)), velocity, mtx.uninit_v2());
+}
+
 function initFlyer(game, engine) {
   var flyer = {
     xOffset: 20,
@@ -17,6 +29,12 @@ function initFlyer(game, engine) {
     liftCoef: 0.5,
     dragCoef: 0.5,
     mass: 1,
+		tailAngle: Math.PI,
+		tailAngularSpeed: 1, // radians/s
+		tailLength: 20,
+		tailLiftCoef: 0.1,
+		tailDragCoef: 0.1,
+		angularInertia: 10000,
   };
   flyer.body = cln.initRoundedLine(
     [flyer.xOffset, game.height/2],
@@ -52,6 +70,25 @@ function initFlyer(game, engine) {
     ctx.moveTo(p1[0], p1[1]);
     ctx.lineTo(p2[0], p2[1]);
     ctx.stroke();
+
+		var tailScreenAngle = this.tailScreenAngle();
+		var p3 = [
+			p1[0]+this.tailLength*Math.cos(tailScreenAngle),
+			p1[1]+this.tailLength*Math.sin(tailScreenAngle)
+		]
+		ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p3[0], p3[1]);
+		ctx.stroke();
+
+		// draw tail force
+		var p4 = mtx.average_v2(p1, p3, mtx.uninit_v2());
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = "black";
+		ctx.moveTo(p4[0], p4[1]);
+		mtx.add_v2(this.tailForce(), p4, p4);
+		ctx.lineTo(p4[0], p4[1]);
+		ctx.stroke();
 
     // draw velocity
     ctx.lineWidth = 1;
@@ -102,29 +139,58 @@ function initFlyer(game, engine) {
     var v = this.physics.velocity;
     var velocityAngle = Math.atan2(v[1], v[0]);
     var screenAngle = this.screenAngle();
-    return screenAngle-velocityAngle;
+    return velocityAngle-screenAngle;
   }
   flyer.getLift = function() {
-    var v = this.physics.velocity;
-    var angleOfAttack = this.angleOfAttack();
-    var s2a = Math.sin(2*angleOfAttack);
-    var lift = mtx.create_v2(
-      -this.liftCoef*v[1]*s2a,
-      this.liftCoef*v[0]*s2a,
-    );
-    return lift;
+		return calcLift(
+			this.physics.velocity,
+			this.angleOfAttack(),
+			this.liftCoef
+		);
   }
   flyer.getDrag = function() {
-    var v = this.physics.velocity;
-    var angleOfAttack = this.angleOfAttack();
-    var drag = mtx.mult_s_v2(-this.dragCoef*Math.abs(Math.sin(angleOfAttack)), v, mtx.uninit_v2());
-    return drag;
+		return calcDrag(
+			this.physics.velocity,
+			this.angleOfAttack(),
+			this.dragCoef
+		);
   }
+	flyer.tailScreenAngle = function() {
+		return this.screenAngle()+this.tailAngle;
+	}
+	flyer.tailAngleOfAttack = function() {
+    var v = this.physics.velocity;
+    var velocityAngle = Math.atan2(v[1], v[0]);
+    var screenAngle = this.tailScreenAngle();
+    return velocityAngle-screenAngle;
+	}
+	flyer.tailForce = function() {
+		var aoa = this.tailAngleOfAttack();
+		var lift = calcLift(this.physics.velocity, aoa, this.tailLiftCoef);
+		var drag = calcDrag(this.physics.velocity, aoa, this.tailDragCoef);
+		return mtx.add_v2(lift, drag, drag);
+	}
+	flyer.tailTorque = function() {
+		var f = this.tailForce();
+		var body = mtx.sub_v2(this.body.get('p1'), this.body.get('p2'), mtx.uninit_v2());
+		var proj = mtx.mult_s_v2(
+			mtx.dot_v2(f, body)/(this.length*this.length),
+			body, mtx.uninit_v2());
+		var norm = mtx.sub_v2(f, proj, mtx.uninit_v2());
+		var torque = mtx.length_v2(norm)*this.length/2;
+		var rot = mtx.create_v2(f[1], -f[0])
+		if (mtx.dot_v2(rot, body) < 0)
+			torque = -torque;
+		return torque;
+	}
   flyer.update = function(dt) {
     // handle user input to update angle
+		this.tailAngle += dt*this.angularDir*this.tailAngularSpeed;
     var center = this.getCenter();
     var angle = this.screenAngle();
-    angle += dt*this.angularDir*this.angularSpeed;
+		var torque = this.tailTorque();
+		this.angularSpeed += dt*(torque/this.angularInertia);
+    angle += dt*this.angularSpeed;
     mtx.set_v2(
       center[0]-this.length*0.5*Math.cos(angle),
       center[1]-this.length*0.5*Math.sin(angle),
@@ -140,6 +206,9 @@ function initFlyer(game, engine) {
     mtx.add_v2(this.getLift(), forces, forces);
     mtx.add_v2(this.getDrag(), forces, forces);
     mtx.mult_s_v2(1/this.mass, forces, flyer.physics.acceleration);
+		game.debug.aoa = this.angleOfAttack();
+		game.debug.taoa = this.tailAngleOfAttack();
+		game.debug.torque = this.tailTorque();
   }
   return flyer;
 }
